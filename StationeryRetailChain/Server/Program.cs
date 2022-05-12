@@ -8,8 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<StationeryRetailChainContext>(options =>
     options.UseSqlServer(connectionString));
+var connectionStringAuth = builder.Configuration.GetConnectionString("AuthConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionStringAuth));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)

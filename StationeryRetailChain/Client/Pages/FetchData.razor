@@ -1,7 +1,7 @@
 ﻿@page "/fetchdata"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@using StationeryRetailChain.Shared
+@using StationeryRetailChain.Shared.Models
 @attribute [Authorize]
 @inject HttpClient Http
 
@@ -11,7 +11,7 @@
 
 <p>This component demonstrates fetching data from the server.</p>
 
-@if (forecasts == null)
+@if (receipts == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -27,13 +27,15 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var forecast in forecasts)
+            @foreach (var receipt in receipts)
             {
                 <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
+                    <td>@receipt.ReceiptNumber</td>
+                    <td>@receipt.SellerId</td>
+                    <td>@receipt.CustomerId</td>
+                    <td>@receipt.PurchaseSum</td>
+                    <td>@receipt.PurchaseDate</td>
+                    <td>@receipt.ReceiptNumber</td>
                 </tr>
             }
         </tbody>
@@ -41,13 +43,13 @@ else
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    private Receipt[]? receipts;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+            receipts = await Http.GetFromJsonAsync<Receipt[]>("api/Receipts");
         }
         catch (AccessTokenNotAvailableException exception)
         {
