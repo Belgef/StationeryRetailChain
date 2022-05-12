@@ -9,6 +9,7 @@ namespace StationeryRetailChain.Shared.Models
         public int ReceiptNumber { get; set; }
         public int SellerId { get; set; }
         public int CustomerId { get; set; }
+        public Customer? Customer { get; set; }
         public DateTime PurchaseDate { get; set; }
         public decimal PurchaseSum { get; set; }
         public DateTime? CreatedAt { get; set; }

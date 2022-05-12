@@ -353,6 +353,8 @@ namespace StationeryRetailChain.Server.Data
                     .HasColumnName("created_at");
 
                 entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+                entity.HasOne(e => e.Customer).WithMany()
+                .HasForeignKey(e => e.CustomerId);
 
                 entity.Property(e => e.PurchaseDate)
                     .HasColumnType("smalldatetime")

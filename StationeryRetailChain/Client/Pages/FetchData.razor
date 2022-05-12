@@ -32,7 +32,7 @@ else
                 <tr>
                     <td>@receipt.ReceiptNumber</td>
                     <td>@receipt.SellerId</td>
-                    <td>@receipt.CustomerId</td>
+                    <td>@(receipt.Customer?.CustomerName ?? "")</td>
                     <td>@receipt.PurchaseSum</td>
                     <td>@receipt.PurchaseDate</td>
                     <td>@receipt.ReceiptNumber</td>
