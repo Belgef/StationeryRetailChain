@@ -1,26 +1,140 @@
 ﻿@page "/seller"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @attribute [Authorize]
-<AuthorizeView>
-    <Authorized>
-        <h1 class="display-6 text-center">Термінал продавця</h1>
-        <p>Продавець: @context.User.Identity?.Name</p>
-        <p>Відділення: @context.User.Identity?.Name</p>
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 
 
+<h1 class="display-6 text-center">Термінал продавця</h1>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Дані про продавця</h5>
+    </div>
+    @if (employee == null)
+    {
+        <div class="spinner-border text-dark" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else
+    { 
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Продавець: @employee.EmployeeName</li>
+            <li class="list-group-item">Посада: @employee.Job.JobName</li>
+            <li class="list-group-item">Адреса відділення: @employee.Shop.StreetAddress</li>
+        </ul>
+    }
+    @if(action!=Action.History)
+    {
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>action=Action.History">Показати історію продажів</button>
+        </div>
+    }
+</div>
+        
 
-    </Authorized>
-</AuthorizeView>
+
+@switch (action)
+{
+    case Action.History:
+        <p class="h4 m-4">Історія продажів</p>
+        @if (receipts != null)
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Номер чеку</th>
+                        <th scope="col">Покупець</th>
+                        <th scope="col">Сума покупки</th>
+                        <th scope="col">Час покупки</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var receipt in receipts)
+                    {
+                        <tr @onclick="()=>GetReceipt(receipt)" style="cursor:pointer;">
+                            <td>@receipt.ReceiptNumber</td>
+                            <td>@(receipt.Customer?.CustomerName ?? "")</td>
+                            <td>@receipt.PurchaseSum</td>
+                            <td>@receipt.PurchaseDate</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        break;
+    case Action.ReceiptDetails:
+        <div class="card m-4">
+            <div class="card-header">
+                Чек №@currentReceipt.ReceiptNumber
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">Ім'я покупця: @(currentReceipt.Customer?.CustomerName ?? "")</li>
+                <li class="list-group-item">Сума покупки: @currentReceipt.PurchaseSum</li>
+                <li class="list-group-item">Час покупки: @currentReceipt.PurchaseDate</li>
+            </ul>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Товар</th>
+                            <th scope="col">Ціна</th>
+                            <th scope="col">Кількість</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in currentReceipt?.Items)
+                        {
+                            <tr>
+                                <td>@item.StockProduct.StationeryProduct.Name</td>
+                                <td>@item.SellPrice</td>
+                                <td>@item.SellQuantity</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        break;
+}
+
+
+
 @*<p role="status">Current count: @currentCount</p>
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 *@
 @code {
-    //public string? UserName;
+    public Employee? employee;
+    public Receipt[]? receipts;
+    public Receipt? currentReceipt;
 
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    UserName = httpContextAccessor?.HttpContext?.User?.Identity?.Name;
-    //}
+    public enum Action {History,ReceiptDetails,CreateReceipt,InfoStock}
+    public Action action = Action.History;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        employee = await Http.GetFromJsonAsync<Employee>("api/employees/byname?name="+user.Identity.Name.Replace('_',' '));
+        await LoadReceipts();
+    }
+    public async Task LoadReceipts()
+    {
+        try
+        {
+            receipts = await Http.GetFromJsonAsync<Receipt[]>("api/receipts/byemployee/"+employee?.EmployeeId);
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+    public void GetReceipt(Receipt receipt)
+    {
+        currentReceipt = receipt;
+        action = Action.ReceiptDetails;
+    }
 }

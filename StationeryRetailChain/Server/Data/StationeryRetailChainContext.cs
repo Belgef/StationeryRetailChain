@@ -225,8 +225,12 @@ namespace StationeryRetailChain.Server.Data
                     .IsFixedLength();
 
                 entity.Property(e => e.JobId).HasColumnName("job_id");
+                entity.HasOne(e => e.Job).WithMany()
+                .HasForeignKey(e => e.JobId);
 
                 entity.Property(e => e.ShopId).HasColumnName("shop_id");
+                entity.HasOne(e => e.Shop).WithMany()
+                .HasForeignKey(e => e.ShopId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
@@ -367,10 +371,14 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.ReceiptNumber).HasColumnName("receipt_number");
 
                 entity.Property(e => e.SellerId).HasColumnName("seller_id");
+                entity.HasOne(e => e.Seller).WithMany()
+                .HasForeignKey(e => e.SellerId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("updated_at");
+
+                entity.HasMany(e => e.Items).WithOne().HasForeignKey(e => e.ReceiptId);
             });
 
             modelBuilder.Entity<ShipmentInvoice>(entity =>
@@ -526,6 +534,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.SellQuantity).HasColumnName("sell_quantity");
 
                 entity.Property(e => e.StockProductId).HasColumnName("stock_product_id");
+                entity.HasOne(e => e.StockProduct).WithMany()
+                .HasForeignKey(e => e.StockProductId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
@@ -600,6 +610,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.ShopId).HasColumnName("shop_id");
 
                 entity.Property(e => e.StationeryProductId).HasColumnName("stationery_product_id");
+                entity.HasOne(e => e.StationeryProduct).WithMany()
+                .HasForeignKey(e => e.StationeryProductId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")

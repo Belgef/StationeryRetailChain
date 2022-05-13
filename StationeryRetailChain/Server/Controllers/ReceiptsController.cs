@@ -40,7 +40,7 @@ namespace StationeryRetailChain.Server.Controllers
           {
               return NotFound();
           }
-            var receipt = await _context.Receipts.FindAsync(id);
+            var receipt = await _context.Receipts.FirstOrDefaultAsync(e => e.ReceiptId == id);
 
             if (receipt == null)
             {
@@ -48,6 +48,26 @@ namespace StationeryRetailChain.Server.Controllers
             }
 
             return receipt;
+        }
+
+        [HttpGet("byemployee/{id}")]
+        public async Task<ActionResult<IEnumerable<Receipt>>> GetReceiptByEmployee(int id)
+        {
+            if (_context.Receipts == null)
+            {
+                return NotFound();
+            }
+            var receipts = await _context.Receipts.Where(e => e.SellerId==id)
+                .Include(e => e.Customer).Include(e => e.Seller)
+                .Include(e => e.Items).ThenInclude(e => e.StockProduct)
+                .ThenInclude(e => e.StationeryProduct).ToListAsync();
+
+            if (receipts == null)
+            {
+                return NotFound();
+            }
+
+            return receipts;
         }
 
         // PUT: api/Receipts/5

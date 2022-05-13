@@ -9,7 +9,9 @@ namespace StationeryRetailChain.Shared.Models
         public string EmployeeName { get; set; } = null!;
         public string? EmployeePhoneNumber { get; set; }
         public int ShopId { get; set; }
+        public StationeryShop Shop { get; set; }
         public int JobId { get; set; }
+        public Job Job { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
