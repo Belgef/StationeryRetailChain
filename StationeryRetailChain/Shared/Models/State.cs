@@ -8,6 +8,7 @@ namespace StationeryRetailChain.Shared.Models
         public int StateId { get; set; }
         public string StateName { get; set; } = null!;
         public int CountryId { get; set; }
+        public Country? Country { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

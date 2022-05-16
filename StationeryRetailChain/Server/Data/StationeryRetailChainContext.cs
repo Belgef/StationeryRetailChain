@@ -87,6 +87,8 @@ namespace StationeryRetailChain.Server.Data
                     .HasColumnName("created_at");
 
                 entity.Property(e => e.StateId).HasColumnName("state_id");
+                entity.HasOne(e => e.State).WithMany()
+                .HasForeignKey(e => e.StateId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
@@ -149,6 +151,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.CustomerId);
 
                 entity.Property(e => e.CityId).HasColumnName("city_id");
+                entity.HasOne(e => e.City).WithMany()
+                .HasForeignKey(e => e.CityId);
 
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("smalldatetime")
@@ -445,6 +449,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.StateId);
 
                 entity.Property(e => e.CountryId).HasColumnName("country_id");
+                entity.HasOne(e => e.Country).WithMany()
+                .HasForeignKey(e => e.CountryId);
 
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("smalldatetime")
@@ -550,6 +556,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.ShopId);
 
                 entity.Property(e => e.CityId).HasColumnName("city_id");
+                entity.HasOne(e => e.City).WithMany()
+                .HasForeignKey(e => e.CityId);
 
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("smalldatetime")

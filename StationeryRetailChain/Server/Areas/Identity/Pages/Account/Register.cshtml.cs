@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using StationeryRetailChain.Server.Data;
 using StationeryRetailChain.Server.Models;
 
 namespace StationeryRetailChain.Server.Areas.Identity.Pages.Account
@@ -30,13 +31,15 @@ namespace StationeryRetailChain.Server.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly StationeryRetailChainContext _context;
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore,
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            StationeryRetailChainContext context)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -44,6 +47,7 @@ namespace StationeryRetailChain.Server.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _context = context;
         }
 
         /// <summary>
@@ -120,6 +124,14 @@ namespace StationeryRetailChain.Server.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+            if (!_context.Employees.Any(e => e.EmployeeName.Equals(Input.Username)))
+            {
+                ModelState.AddModelError(string.Empty, "Person with this username cannot be created.");
+                return Page();
+            }
+
+
             if (ModelState.IsValid)
             {
                 var user = CreateUser();

@@ -1,0 +1,264 @@
+﻿@page "/customers"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations;
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+@if (currentEmployee == null)
+{
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEmployee.Job.JobName.ToLower().Contains("admin")))
+{
+    <h1 class="display-6 text-center">Доступ заблоковано</h1>
+}
+else
+{
+    <h1 class="display-6 text-center">База клієнтів</h1>
+    <div class="card">
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>{newItem=null;action=Action.Add;}">Додати клієнта</button>
+            @if (action != Action.All)
+            {
+                <button class="btn btn-primary" @onclick="()=>action=Action.All">Список клієнтів</button>
+            }
+        </div>
+    </div>
+    @switch (action)
+    {
+        case Action.All:
+            <p class="h4 m-4">Список клієнтів</p>
+            @if (customers != null)
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Ім'я та прізвище</th>
+                            <th scope="col">Телефон</th>
+                            <th scope="col">Адреса</th>
+                            <th scope="col">Місто</th>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in customers)
+                        {
+                            @*<tr style="cursor:pointer;" @onclick="()=>GetItem(item)">*@
+                            <tr>
+                                <td>@item.CustomerName</td>
+                                <td>@item.CustomerPhoneNumber</td>
+                                <td>@item.StreetAddress</td>
+                                <td>@item.City.CityName</td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            break;
+        @*case Action.Details:
+            <div class="card m-4">
+                <div class="card-header">
+                    Чек №@currentItem.ReceiptNumber
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Ім'я покупця: @(currentReceipt.Customer?.CustomerName ?? "")</li>
+                    <li class="list-group-item">Сума покупки: @currentReceipt.PurchaseSum</li>
+                    <li class="list-group-item">Час покупки: @currentReceipt.PurchaseDate</li>
+                </ul>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Товар</th>
+                                <th scope="col">Ціна</th>
+                                <th scope="col">Кількість</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in currentReceipt?.Items)
+                            {
+                                <tr>
+                                    <td>@item.StockProduct.StationeryProduct.Name</td>
+                                    <td>@item.SellPrice</td>
+                                    <td>@item.SellQuantity</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            break;*@
+        case Action.Add:
+        case Action.Edit:
+            <p class="h4 m-4">@((action==Action.Add)?"Додати клієнта":"Редагувати клієнта")</p>
+            <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator /> 
+                <div class="mb-3">
+                    <label class="form-label">Ім'я:</label>
+                    <InputText @bind-Value="newData.CustomerName" />
+                    <ValidationMessage For="() => newData.CustomerName" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Телефон:</label>
+                    <InputText @bind-Value="newData.PhoneNumber" />
+                    <ValidationMessage For="() => newData.PhoneNumber" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Адреса:</label>
+                    <InputText @bind-Value="newData.StreetAddress" />
+                    <ValidationMessage For="() => newData.StreetAddress" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Місто</label>
+                    <InputSelect @bind-Value="newData.CityId">
+                        <option value=-1>Оберіть місто ...</option>
+                        @foreach (var city in cities)
+                        {
+                            <option value=@city.CityId>@($"{city.CityName}, {city.State.StateName}")</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => newData.CityId" />
+                </div>
+                <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
+            </EditForm>
+            break;
+    }
+}
+
+@code {
+    private enum Action { All, Details, Add, Edit }
+    private Action action = Action.All;
+
+    private Employee? currentEmployee;
+    private Customer[]? customers;
+    private City[]? cities;
+
+    //ReceiptDetails
+    private Customer? currentItem;
+
+    //CreateReceipt
+    private EditContext? editContext;
+    private class InputData 
+    {
+        public int CustomerId { get; set; } = 0;
+        [Required]
+        [RegularExpression(@"[A-Za-z]+ [A-Za-z]+", ErrorMessage = "Ім'я та прізвище користувача у неправильному форматі.")]
+        [StringLength(50, MinimumLength = 5, ErrorMessage = "Ім'я та прізвище користувача у неправильному форматі.")]
+        public string? CustomerName { get; set; }
+        [Required]
+        [RegularExpression(@"[0-9]+", ErrorMessage = "Телефон у невірному форматі.")]
+        [StringLength(10, MinimumLength = 10, ErrorMessage = "Телефон у невірному форматі.")]
+        public string? PhoneNumber { get; set; } = "0123456789";
+        [Required]
+        [StringLength(255, MinimumLength = 5, ErrorMessage = "Адреса має мати розмір від {2} до {1} символів.")]
+        public string? StreetAddress { get; set; }
+        [Required]
+        public int CityId { get; set; }
+    }
+    private InputData newData = new();
+    private Customer? newItem;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
+        if (currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEmployee.Job.JobName.ToLower().Contains("admin"))
+            await LoadDataAsync();
+    }
+    public async Task LoadDataAsync()
+    {
+        try
+        {
+            customers = await Http.GetFromJsonAsync<Customer[]>("api/customers");
+            cities = await Http.GetFromJsonAsync<City[]>("api/cities");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+    public void GetItem(Customer item)
+    {
+        currentItem = item;
+        action = Action.Details;
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(newData);
+        editContext.OnValidationRequested += HandleValidationRequested;
+        messageStore = new(editContext);
+    }
+    private void HandleValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        messageStore?.Clear();
+        if (newData.CityId == -1)
+            messageStore?.Add(() => newData.CityId, "Будь ласка, оберіть місто");
+    }
+    private async void HandleValidSubmit()
+    {
+        newItem = new Customer()
+            {
+                CustomerName = newData.CustomerName,
+                CustomerPhoneNumber = newData.PhoneNumber,
+                StreetAddress = newData.StreetAddress,
+                CityId = newData.CityId
+            };
+        messageStore?.Clear();
+
+        HttpResponseMessage result;
+        if(action==Action.Add)
+            result = await Http.PostAsJsonAsync("api/customers", newItem);
+        else
+        {
+            newItem.CustomerId = newData.CustomerId;
+            result = await Http.PutAsJsonAsync("api/customers/"+newData.CustomerId, newItem);
+        }
+        await LoadDataAsync();
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] {(action==Action.Add)?"Клієнта додано":"Клієнта редаговано"});
+            newData.CustomerId = 0;
+            newData.CustomerName = "";
+            newData.PhoneNumber = "";
+            newData.StreetAddress = "";
+            newData.CityId = -1;
+            newItem = null;
+            action = Action.All;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private void Edit(Customer item)
+    {
+        newData.CustomerId = item.CustomerId;
+        newData.CustomerName = item.CustomerName;
+        newData.PhoneNumber = item.CustomerPhoneNumber;
+        newData.StreetAddress = item.StreetAddress;
+        newData.CityId = item.CityId;
+        action = Action.Edit;
+    }
+    private async void Delete(Customer item)
+    {
+        var result = await Http.DeleteAsync("api/customers/"+item.CustomerId);
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Клієнта видалено" });
+            await LoadDataAsync();
+            action = Action.All;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+}

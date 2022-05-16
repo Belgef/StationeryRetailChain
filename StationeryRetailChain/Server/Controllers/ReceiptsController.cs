@@ -23,13 +23,25 @@ namespace StationeryRetailChain.Server.Controllers
 
         // GET: api/Receipts
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Receipt>>> GetReceipts()
+        public async Task<ActionResult<IEnumerable<Receipt>>> GetReceipts(int employeeId)
         {
             if (_context.Receipts == null)
             {
                 return NotFound();
             }
-            return await _context.Receipts.Include(e => e.Customer).ToListAsync();
+            if (employeeId != 0) {
+                Employee? emp = _context.Employees.Where(x => x.EmployeeId == employeeId).Include(e => e.Job).FirstOrDefault();
+                if(emp == null)
+                    return NotFound();
+                if (!emp.Job.JobName.ToLower().Contains("seller"))
+                    return Forbid();
+                return await _context.Receipts.Where(e => e.SellerId == employeeId)
+                .Include(e => e.Customer).Include(e => e.Items).ThenInclude(e => e.StockProduct)
+                .ThenInclude(e => e.StationeryProduct).Include(e=>e.Seller).ThenInclude(e=>e.Shop)
+                .ThenInclude(e=>e.City).ThenInclude(e=>e.State).ThenInclude(e=>e.Country).ToListAsync();
+            }
+            else
+                return await _context.Receipts.Include(e => e.Customer).ToListAsync();
         }
 
         // GET: api/Receipts/5
@@ -48,26 +60,6 @@ namespace StationeryRetailChain.Server.Controllers
             }
 
             return receipt;
-        }
-
-        [HttpGet("byemployee/{id}")]
-        public async Task<ActionResult<IEnumerable<Receipt>>> GetReceiptByEmployee(int id)
-        {
-            if (_context.Receipts == null)
-            {
-                return NotFound();
-            }
-            var receipts = await _context.Receipts.Where(e => e.SellerId==id)
-                .Include(e => e.Customer).Include(e => e.Seller)
-                .Include(e => e.Items).ThenInclude(e => e.StockProduct)
-                .ThenInclude(e => e.StationeryProduct).ToListAsync();
-
-            if (receipts == null)
-            {
-                return NotFound();
-            }
-
-            return receipts;
         }
 
         // PUT: api/Receipts/5
@@ -105,12 +97,17 @@ namespace StationeryRetailChain.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<Receipt>> PostReceipt(Receipt receipt)
         {
-          if (_context.Receipts == null)
-          {
-              return Problem("Entity set 'StationeryRetailChainContext.Receipts'  is null.");
-          }
+            if (_context.Receipts == null)
+            {
+                return Problem("Entity set 'StationeryRetailChainContext.Receipts'  is null.");
+            }
+            await _context.StationerySales.ForEachAsync(e=>_context.Entry(e).State = EntityState.Detached);
             _context.Receipts.Add(receipt);
             await _context.SaveChangesAsync();
+            await _context.StationerySales.ForEachAsync(e => _context.Entry(e).State = EntityState.Unchanged);
+
+            foreach(var item in receipt.Items)
+                _context.Database.ExecuteSqlRaw("EXEC PerformPurchase {0}, {1}, {2}", receipt.ReceiptId, item.StockProductId, item.SellQuantity);
 
             return CreatedAtAction("GetReceipt", new { id = receipt.ReceiptId }, receipt);
         }

@@ -50,8 +50,8 @@ namespace StationeryRetailChain.Server.Controllers
             return employee;
         }
 
-        // GET: api/Employees?name={name}
-        [HttpGet("byname")]
+        // GET: api/Employees/{name}
+        [HttpGet("name/{name}")]
         public async Task<ActionResult<Employee>> GetEmployee(string name)
         {
             if (_context.Employees == null)

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace StationeryRetailChain.Shared.Models
 {
     public partial class Receipt
-    {
+    { 
         public int ReceiptId { get; set; }
         public int ReceiptNumber { get; set; }
         public int SellerId { get; set; }
