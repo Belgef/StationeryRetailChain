@@ -9,6 +9,7 @@ namespace StationeryRetailChain.Shared.Models
         public int DeliveryInvoiceId { get; set; }
         public int ShipmentSupplyId { get; set; }
         public int StockProductId { get; set; }
+        public StockProduct? StockProduct { get; set; }
         public int Quantity { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

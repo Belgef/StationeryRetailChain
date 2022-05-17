@@ -12,7 +12,7 @@
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEmployee.Job.JobName.ToLower().Contains("admin")))
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller")))
 {
     <h1 class="display-6 text-center">Доступ заблоковано</h1>
 }
@@ -115,7 +115,7 @@ else
                         <InputText @bind-Value="newReceiptData.CustomerName" />
                         <ValidationMessage For="() => newReceiptData.CustomerName" />
                     </div>
-                    <button type="submit" class="btn btn-primary">Сканувати продукти</button>
+                    <button type="submit" class="btn btn-primary">Сканувати товари</button>
                 </EditForm>
             }
             else
@@ -227,7 +227,7 @@ else
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
-        if (currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEmployee.Job.JobName.ToLower().Contains("admin"))
+        if (currentEmployee.Job.JobName.ToLower().Contains("seller"))
             await LoadDataAsync();
     }
     public async Task LoadDataAsync()

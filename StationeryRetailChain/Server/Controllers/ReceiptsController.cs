@@ -102,14 +102,15 @@ namespace StationeryRetailChain.Server.Controllers
                 return Problem("Entity set 'StationeryRetailChainContext.Receipts'  is null.");
             }
             await _context.StationerySales.ForEachAsync(e=>_context.Entry(e).State = EntityState.Detached);
-            _context.Receipts.Add(receipt);
+            Receipt tempReceipt = new Receipt() { CustomerId = receipt.CustomerId, SellerId = receipt.SellerId, PurchaseDate=receipt.PurchaseDate };
+            _context.Receipts.Add(tempReceipt);
             await _context.SaveChangesAsync();
             await _context.StationerySales.ForEachAsync(e => _context.Entry(e).State = EntityState.Unchanged);
 
             foreach(var item in receipt.Items)
-                _context.Database.ExecuteSqlRaw("EXEC PerformPurchase {0}, {1}, {2}", receipt.ReceiptId, item.StockProductId, item.SellQuantity);
+                _context.Database.ExecuteSqlRaw("EXEC PerformPurchase {0}, {1}, {2}", tempReceipt.ReceiptId, item.StockProductId, item.SellQuantity);
 
-            return CreatedAtAction("GetReceipt", new { id = receipt.ReceiptId }, receipt);
+            return CreatedAtAction("GetReceipt", new { id = tempReceipt.ReceiptId }, tempReceipt);
         }
 
         // DELETE: api/Receipts/5

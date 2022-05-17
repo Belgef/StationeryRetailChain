@@ -17,7 +17,7 @@ namespace StationeryRetailChain.Server.Data
         {
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.LogTo(Console.WriteLine);
+            => optionsBuilder.LogTo(Console.WriteLine).EnableSensitiveDataLogging();
 
         public virtual DbSet<Category> Categories { get; set; } = null!;
         public virtual DbSet<City> Cities { get; set; } = null!;
@@ -186,6 +186,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.DeliveryInvoiceId);
 
                 entity.Property(e => e.AuthorId).HasColumnName("author_id");
+                entity.HasOne(e => e.Author).WithMany()
+                .HasForeignKey(e => e.AuthorId);
 
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("smalldatetime")
@@ -198,12 +200,18 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.DeliveryInvoiceNumber).HasColumnName("delivery_invoice_number");
 
                 entity.Property(e => e.ShipmentInvoiceId).HasColumnName("shipment_invoice_id");
+                entity.HasOne(e => e.ShipmentInvoice).WithMany()
+                .HasForeignKey(e => e.ShipmentInvoiceId);
 
                 entity.Property(e => e.ShopId).HasColumnName("shop_id");
+                entity.HasOne(e => e.Shop).WithMany()
+                .HasForeignKey(e => e.ShopId);
 
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("updated_at");
+
+                entity.HasMany(e => e.StationerySupplies).WithOne().HasForeignKey(e => e.DeliveryInvoiceId);
             });
 
             modelBuilder.Entity<Employee>(entity =>
@@ -393,6 +401,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.ShipmentInvoiceId);
 
                 entity.Property(e => e.AuthorId).HasColumnName("author_id");
+                entity.HasOne(e => e.Author).WithMany()
+                .HasForeignKey(e => e.AuthorId);
 
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("smalldatetime")
@@ -413,6 +423,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.UpdatedAt)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("updated_at");
+
+                entity.HasMany(e => e.ShipmentSupplies).WithOne().HasForeignKey(e => e.ShipmentInvoiceId);
             });
 
             modelBuilder.Entity<ShipmentSupply>(entity =>
@@ -420,7 +432,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.ToTable("shipment_supply");
 
                 entity.Property(e => e.ShipmentInvoiceId).HasColumnName("shipment_invoice_id");
-                entity.HasKey(e => e.ShipmentInvoiceId);
 
                 entity.Property(e => e.Cost)
                     .HasColumnType("decimal(10, 2)")
@@ -433,6 +444,7 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.Quantity).HasColumnName("quantity");
 
                 entity.Property(e => e.ShipmentSupplyId).HasColumnName("shipment_supply_id");
+                entity.HasKey(e => e.ShipmentSupplyId);
 
                 entity.Property(e => e.StationeryProductId).HasColumnName("stationery_product_id");
 
@@ -706,6 +718,8 @@ namespace StationeryRetailChain.Server.Data
             });
 
             OnModelCreatingPartial(modelBuilder);
+
+            //var s = modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys().Select(e2 => new { e, e2 })).ToList();
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
