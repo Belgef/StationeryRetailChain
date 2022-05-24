@@ -11,7 +11,9 @@ namespace StationeryRetailChain.Shared.Models
         public string? StreetAddress { get; set; }
         public int CityId { get; set; }
         public City? City { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public override string ToString()
+        {
+            return $"{CustomerName}, {CustomerPhoneNumber}, {City?.CityName}";
+        }
     }
 }

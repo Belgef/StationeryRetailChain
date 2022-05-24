@@ -1,0 +1,56 @@
+﻿@page "/products"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations;
+@using StationeryRetailChain.Client.Elements;
+@using StationeryRetailChain.Client.Elements.Form;
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (currentEmployee == null)
+{
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("product") || currentEmployee.Job.JobName.ToLower().Contains("admin")))
+{
+    <h1 class="display-6 text-center">Доступ заблоковано</h1>
+}
+else
+{
+    <h1 class="display-6 text-center">Термінал менеджера з продажу</h1>
+    <div class="card">
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>action=Action.Products">Товари</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Manufacturers">Виробники</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Colors">Кольори</button>
+        </div>
+    </div>
+    @switch (action)
+    {
+        case Action.Products:
+            <ProductManager />
+            break;
+        case Action.Manufacturers:
+            <ManufacturerManager />
+            break;
+        case Action.Colors:
+            <ColorManager />
+            break;
+    }
+}
+
+@code {
+    private enum Action { Products, Colors, Manufacturers }
+    private Action action = Action.Products;
+
+    private Employee? currentEmployee;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
+    }
+}

@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeryRetailChain.Server", "StationeryRetailChain\Server\StationeryRetailChain.Server.csproj", "{6324B0E1-D1D1-4F9E-A3E8-87F29ACD5443}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StationeryRetailChain.Server", "StationeryRetailChain\Server\StationeryRetailChain.Server.csproj", "{6324B0E1-D1D1-4F9E-A3E8-87F29ACD5443}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeryRetailChain.Client", "StationeryRetailChain\Client\StationeryRetailChain.Client.csproj", "{19CEE7E7-DC22-4CBF-8E31-5ED7EDB2B1D0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StationeryRetailChain.Client", "StationeryRetailChain\Client\StationeryRetailChain.Client.csproj", "{19CEE7E7-DC22-4CBF-8E31-5ED7EDB2B1D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StationeryRetailChain.Shared", "StationeryRetailChain\Shared\StationeryRetailChain.Shared.csproj", "{DA42D7D6-E61A-4263-BA1E-D99D5F5D22D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StationeryRetailChain.Shared", "StationeryRetailChain\Shared\StationeryRetailChain.Shared.csproj", "{DA42D7D6-E61A-4263-BA1E-D99D5F5D22D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

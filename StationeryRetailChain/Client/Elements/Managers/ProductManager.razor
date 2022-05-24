@@ -1,0 +1,258 @@
+﻿@switch (action)
+{
+    case Action.All:
+        <p class="h4 m-4">Список товарів</p>
+        @if (products != null)
+        {
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати товар</button>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Назва</th>
+                        <th scope="col">Штрихкод</th>
+                        <th scope="col">Ціна</th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in products.OrderBy(c => c.Name))
+                    {
+                        <tr style="cursor:pointer;" @onclick="()=>GetItem(item.StationeryProductId)">
+                            <td>@item.Name</td>
+                            <td>@item.BarCode</td>
+                            <td>@item.Price</td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        break;
+    case Action.Details:
+        @if (currentItem == null)
+        {
+            <div class="spinner-grow text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            <InfoTable Header="Дані про товар" Title="@currentItem.Name" Description="@currentItem.Description"
+           Parameters="@(new Dictionary<string,string>(){
+                    {"Штрихкод",currentItem.BarCode},
+                    {"Виробник",currentItem.Manufacturer?.ManufacturerName??"Пусто"},
+                    {"Ціна",currentItem.Price.ToString()},
+                    {"Тип",currentItem.Type?.TypeName??"Пусто"},
+                    {"Підкатегорія",currentItem.Type?.Subcategory?.SubcategoryName??"Пусто"},
+                    {"Категорія",currentItem.Type?.Subcategory?.Category?.CategoryName??"Пусто"},
+                    {"Розміри",$"{currentItem.Length}x{currentItem.Width}x{currentItem.Height}"},
+                    {"Колір",currentItem.Color?.ColorName??"Пусто"},
+                    {"Мінімальний вік",currentItem.MinimumAge.ToString()},
+                })" />
+            <button class="btn btn-primary" @onclick="()=>action=Action.All">Список товарів</button>
+        }
+
+        break;
+    case Action.Add:
+    case Action.Edit:
+        <p class="h4 m-4">@((action==Action.Add)?"Додати товар":"Редагувати товар")</p>
+        <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <FInputString Name="Назва" @bind-Value="newData.Name" />
+            <FInputString Name="Опис" @bind-Value="newData.Description" />
+            <FInputString Name="Штрих-код" @bind-Value="newData.BarCode" />
+            <FInputFK Name="Виробник" @bind-Value="newData.ManufacturerId" Options=@(manufacturers.ToDictionary(e=>e.ManufacturerId??0,e=>e.ManufacturerName)) />
+            <FInputString Name="Ціна" @bind-Value="newData.Price" />
+            <FInputFK Name="Тип" @bind-Value="newData.TypeId" Options=@(types.ToDictionary(e=>e.TypeId??0,e=>$"{e.Subcategory?.Category?.CategoryName} / {e.Subcategory?.SubcategoryName} / {e.TypeName}")) />
+            <FInputString Name="Розмір" @bind-Value="newData.Size" />
+            <FInputNumber Name="Кількість в упаковці" @bind-Value="newData.ItemsPerPackage" />
+            <FInputNumber Name="Кількість упаковок у коробці" @bind-Value="newData.PackagesPerBox" />
+            <FInputFK Name="Колір" @bind-Value="newData.ColorId" Options=@(colors.ToDictionary(e=>e.ColorId??-1,e=>$"{e.ColorName} (#{e.ColorHex})")) />
+            <FInputNumber Name="Мінімальний вік" @bind-Value="newData.MinimumAge" />
+            <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
+        </EditForm>
+        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список товарів</button>
+        break;
+}
+
+@code {
+
+    private enum Action { All, Details, Add, Edit }
+    private Action action = Action.All;
+
+    private StationeryProduct[]? products;
+    private Manufacturer[]? manufacturers;
+    private Color[]? colors;
+    private StationeryRetailChain.Shared.Models.Type[]? types;
+
+    //Details
+    private StationeryProduct? currentItem;
+
+    //Create
+    private EditContext? editContext;
+    private class InputData
+    {
+        public int ProductId { get; set; } = 0;
+        [Required]
+        [StringLength(50, MinimumLength = 5, ErrorMessage = "Назва товару має мати розмір від {2} до {1} символів.")]
+        public string Name { get; set; } = "";
+        [Required]
+        [StringLength(255, MinimumLength = 5, ErrorMessage = "Опис товару має мати розмір від {2} до {1} символів.")]
+        public string Description { get; set; } = "";
+        [Required]
+        [RegularExpression(@"\d{13}", ErrorMessage = "Штрихкод у невірному форматі.")]
+        public string? BarCode { get; set; }
+        [Required]
+        public int ManufacturerId { get; set; }
+        [Required]
+        [RegularExpression(@"\d+(.\d{2})?", ErrorMessage = "Вартість у неправильному форматі.")]
+        public string Price { get; set; } = "0.00";
+        [Required]
+        public int TypeId { get; set; }
+        [Required]
+        [RegularExpression(@"(\d+x){2}\d+", ErrorMessage = "Розмір має бути у форматі ДхШхВ.")]
+        public string Size { get; set; } = "0x0x0";
+        [Required]
+        [Range(1, 200)]
+        public int ItemsPerPackage { get; set; }
+        [Required]
+        [Range(1, 200)]
+        public int PackagesPerBox { get; set; }
+        [Required]
+        public int ColorId { get; set; }
+        [Required]
+        [Range(1, 99)]
+        public int MinimumAge { get; set; }
+    }
+    private InputData newData = new();
+    private StationeryProduct? newItem;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+    public async Task LoadDataAsync()
+    {
+        try
+        {
+            products = await Http.GetFromJsonAsync<StationeryProduct[]>("api/stationeryproducts");
+            manufacturers = await Http.GetFromJsonAsync<Manufacturer[]>("api/manufacturers");
+            colors = await Http.GetFromJsonAsync<Color[]>("api/colors");
+            types = await Http.GetFromJsonAsync<StationeryRetailChain.Shared.Models.Type[]>("api/types");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+    public async void GetItem(int id)
+    {
+        currentItem = await Http.GetFromJsonAsync<StationeryProduct>("api/stationeryproducts/" + id);
+        action = Action.Details;
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(newData);
+        editContext.OnValidationRequested += HandleValidationRequested;
+        messageStore = new(editContext);
+    }
+    private void HandleValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        messageStore?.Clear();
+        if (newData.ManufacturerId <= 0)
+            messageStore?.Add(() => newData.ManufacturerId, "Будь ласка, оберіть виробника");
+        if (newData.ColorId <= 0)
+            messageStore?.Add(() => newData.ColorId, "Будь ласка, оберіть колір");
+        if (newData.TypeId <= 0)
+            messageStore?.Add(() => newData.TypeId, "Будь ласка, оберіть тип");
+    }
+    private async void HandleValidSubmit()
+    {
+        newItem = new StationeryProduct()
+            {
+                BarCode = newData.BarCode,
+                ColorId = newData.ColorId,
+                Description = newData.Description,
+                Height = int.Parse(newData.Size.Split('x')[2]),
+                ItemsPerPackage = newData.ItemsPerPackage,
+                Length = int.Parse(newData.Size.Split('x')[0]),
+                ManufacturerId = newData.ManufacturerId,
+                MinimumAge = newData.MinimumAge,
+                Name = newData.Name,
+                PackagesPerBox = newData.PackagesPerBox,
+                Price = decimal.Parse(newData.Price),
+                TypeId = newData.TypeId,
+                Width = int.Parse(newData.Size.Split('x')[1])
+            };
+        messageStore?.Clear();
+
+        HttpResponseMessage result;
+        if (action == Action.Add)
+            result = await Http.PostAsJsonAsync("api/stationeryproducts", newItem);
+        else
+        {
+            newItem.StationeryProductId = newData.ProductId;
+            result = await Http.PutAsJsonAsync("api/stationeryproducts/" + newData.ProductId, newItem);
+        }
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Товар додано" : "Товар редаговано" });
+            ClearForm();
+            newItem = null;
+            action = Action.All;
+            await LoadDataAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private void ClearForm()
+    {
+        newData.BarCode = "";
+        newData.ColorId = -1;
+        newData.Description = "";
+        newData.Size = "";
+        newData.ItemsPerPackage = 0;
+        newData.ManufacturerId = -1;
+        newData.MinimumAge = -1;
+        newData.Name = "";
+        newData.PackagesPerBox = -1;
+        newData.Price = "";
+        newData.ProductId = 0;
+        newData.TypeId = -1;
+    }
+    private void Edit(StationeryProduct item)
+    {
+        newData.BarCode = item.BarCode;
+        newData.ColorId = item.ColorId ?? 0;
+        newData.Description = item.Description ?? "";
+        newData.Size = $"{item.Length}x{item.Width}x{item.Height}";
+        newData.ItemsPerPackage = item.ItemsPerPackage ?? 0;
+        newData.ManufacturerId = item.ManufacturerId;
+        newData.MinimumAge = item.MinimumAge;
+        newData.Name = item.Name;
+        newData.PackagesPerBox = item.PackagesPerBox ?? 0;
+        newData.Price = item.Price.ToString();
+        newData.ProductId = item.StationeryProductId;
+        newData.TypeId = item.TypeId;
+        action = Action.Edit;
+    }
+    private async void Delete(StationeryProduct item)
+    {
+        var result = await Http.DeleteAsync("api/stationeryproducts/" + item.StationeryProductId);
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Товар видалено" });
+            await LoadDataAsync();
+            action = Action.All;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цей товар" });
+    }
+}

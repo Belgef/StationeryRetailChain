@@ -14,8 +14,6 @@ namespace StationeryRetailChain.Shared.Models
         public DateTime? CreationDate { get; set; }
         public int AuthorId { get; set; }
         public Employee? Author { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
         public IEnumerable<StationerySupply>? StationerySupplies { get; set; }
 
     }

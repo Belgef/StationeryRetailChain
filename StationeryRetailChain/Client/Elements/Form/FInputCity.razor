@@ -1,0 +1,167 @@
+﻿
+@if(countries==null || states==null || cities==null)
+{
+    <div class="spinner-grow text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <label class="form-label" style="position:relative; top:-0.1em">Країна:</label>
+        <RadzenAutoComplete Data=@countries TextProperty="CountryName" @bind-Value="CountryName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+        @if(CountryName != null && CountryName != "" && !countries.Any(e=>e.CountryName==CountryName))
+        {
+            <div class="alert alert-primary d-flex align-items-center" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+              </svg>
+              <div>
+                Цієї країни немає, бажаєте додати? <button class="btn btn-primary btn-sm" @onclick="AddCountry">Додати</button>
+              </div>
+            </div>
+        }
+    </div>
+    <div class="mb-3">
+        <label class="form-label" style="position:relative; top:-0.1em">Область:</label>
+        <RadzenAutoComplete Data=@states.Where(s=>s.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId) TextProperty="StateName" @bind-Value="StateName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!countries.Any(e=>e.CountryName==CountryName)) />
+        @if(StateName != null && StateName != "" && !states.Any(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId))
+        {
+            <div class="alert alert-primary d-flex align-items-center" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+              </svg>
+              <div>
+                Цієї області немає, бажаєте додати? <button type="button" class="btn btn-primary btn-sm" @onclick="AddState">Додати</button>
+              </div>
+            </div>
+        }
+    </div>
+    <div class="mb-3">
+        <label class="form-label" style="position:relative; top:-0.1em">Місто:</label>
+        <RadzenAutoComplete Data=@cities.Where(c=>c.StateId==states.First(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId).StateId) TextProperty="CityName" @bind-Value="CityName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!states.Any(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId)) />
+        @if(CityName != null && CityName != "" && !cities.Any(e=>e.CityName==CityName && e.StateId==states.First(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId).StateId))
+        {
+            <div class="alert alert-primary d-flex align-items-center" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+              </svg>
+              <div>
+                Цього міста немає, бажаєте додати? <button class="btn btn-primary btn-sm" @onclick="AddCity">Додати</button>
+              </div>
+            </div>
+        }
+    </div>
+}
+
+
+
+
+@code {
+    [Parameter]
+    public int Value
+    {
+        get => _value;
+        set
+        {
+            if (_value == value) return;
+            _value = value;
+            if(cities?.Any(c=>c.CityId==value)??false)
+            {
+                City city = cities.First(c => c.CityId == value);
+                CountryName=city.State.Country.CountryName;
+                StateName = city.State.StateName;
+                CityName = city.CityName;
+            }
+            else
+            {
+                CountryName="";
+                StateName = "";
+                CityName = "";
+            }
+
+            ValueChanged.InvokeAsync(value);
+        }
+    }
+    private int _value;
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+    [Parameter]
+    public Expression<Func<int>> ValueExpression { get; set; }
+
+    private City[]? cities;
+    private State[]? states;
+    private Country[]? countries;
+
+    private string CountryName { get; set; }
+    private string StateName { get; set; }
+    private string CityName {
+        get => _cityName; 
+        set
+        {
+            _cityName = value;
+            if(value != null && value != "" && cities!=null&&states!=null&&countries!=null&& cities.Any(e=>e.CityName==value && e.StateId==states.First(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId).StateId))
+            {
+                Value = cities.First(e => e.CityName == value && e.StateId == states.First(e => e.StateName == StateName && e.CountryId == countries.First(e => e.CountryName == CountryName).CountryId).StateId).CityId??-1;
+            }
+        }
+    }
+    private string _cityName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cities = await Http.GetFromJsonAsync<City[]>("api/cities");
+            states = await Http.GetFromJsonAsync<State[]>("api/states");
+            countries = await Http.GetFromJsonAsync<Country[]>("api/countries");
+            if(cities?.Any(c=>c.CityId==Value)??false)
+            {
+                City city = cities.First(c => c.CityId == Value);
+                CountryName=city.State.Country.CountryName;
+                StateName = city.State.StateName;
+                CityName = city.CityName;
+            }
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+    private async void AddCountry()
+    {
+        var result = await Http.PostAsJsonAsync("api/countries", new Country() { CountryName=CountryName });
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Країну додано" });
+            await OnInitializedAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private async void AddState()
+    {
+        var result = await Http.PostAsJsonAsync("api/states", new State() { StateName=StateName, CountryId=countries.First(e=>e.CountryName==CountryName).CountryId??0 });
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Область додано" });
+            await OnInitializedAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private async void AddCity()
+    {
+        var result = await Http.PostAsJsonAsync("api/cities", new City() { CityName=CityName, StateId=states.First(e=>e.StateName==StateName && e.CountryId==countries.First(e=>e.CountryName==CountryName).CountryId).StateId??0 });
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Місто додано" });
+            await OnInitializedAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+}

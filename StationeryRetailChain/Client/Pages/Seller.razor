@@ -1,10 +1,6 @@
 ﻿@page "/seller"
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
 @attribute [Authorize]
-@inject HttpClient Http
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IJSRuntime JSRuntime
 
 @if (currentEmployee == null)
 {
@@ -57,7 +53,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var receipt in receipts.OrderByDescending(e => e.CreatedAt))
+                        @foreach (var receipt in receipts.OrderByDescending(e => e.PurchaseDate))
                         {
                             <tr style="cursor:pointer;">
                                 <td @onclick="()=>GetReceipt(receipt)">@receipt.ReceiptNumber</td>
@@ -111,8 +107,7 @@ else
             {
                 <EditForm EditContext="receiptEditContext" OnValidSubmit="@HandleReceiptValidSubmit">
                     <div class="mb-3">
-                        <label class="form-label">Введіть ім'я покупця:</label>
-                        <InputText @bind-Value="newReceiptData.CustomerName" />
+                        <RadzenAutoComplete Data=@customers Placeholder="Введіть ім'я покупця..." TextProperty="CustomerName" @bind-Value="newReceiptData.CustomerName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                         <ValidationMessage For="() => newReceiptData.CustomerName" />
                     </div>
                     <button type="submit" class="btn btn-primary">Сканувати товари</button>
@@ -149,14 +144,8 @@ else
                     <ValidationMessage For="() => newProductData" />
                     <div class="mb-3">
                         <label class="form-label">Товар</label>
-                        <InputSelect @bind-Value="newProductData.ProductId">
-                            <option value=-1>Оберіть товар ...</option>
-                            @foreach (var prod in stock)
-                            {
-                                <option value=@prod.StockProductId>@prod.StationeryProduct.Name</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="() => newProductData.ProductId" />
+                        <RadzenAutoComplete Data=@stock.Select(e=>e.StationeryProduct) TextProperty="Name" Placeholder="Оберіть товар..." @bind-Value="newProductData.ProductName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                        <ValidationMessage For="() => newProductData.ProductName" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Кількість</label>
@@ -219,7 +208,7 @@ else
     private ValidationMessageStore? receiptMessageStore;
 
     private EditContext? productEditContext;
-    private class ProductData { public int ProductId { get; set; } public int Quantity { get; set; } }
+    private class ProductData { public string? ProductName { get; set; } public int Quantity { get; set; } }
     private ProductData newProductData = new();
     private ValidationMessageStore? productMessageStore;
 
@@ -280,30 +269,32 @@ else
     private void HandleProductValidationRequested(object? sender, ValidationRequestedEventArgs args)
     {
         productMessageStore?.Clear();
+        int id = stock.FirstOrDefault(e => e.StationeryProduct.Name == newProductData.ProductName).StockProductId;
         if (newReceipt.Items.Count() >= 20)
             productMessageStore?.Add(() => newProductData, "Досягнуто максимальної кількості товарів - 20");
 
-        if (newProductData.ProductId == -1)
-            productMessageStore?.Add(() => newProductData.ProductId, "Будь ласка, оберіть товар");
-        else if (newReceipt.Items.Any(e => e.StockProductId == newProductData.ProductId))
-            productMessageStore?.Add(() => newProductData.ProductId, "Даний товар уже додано");
+        if (!stock.Select(e=>e.StationeryProduct.Name).Contains(newProductData.ProductName))
+            productMessageStore?.Add(() => newProductData.ProductName, "Будь ласка, оберіть товар");
+        else if (newReceipt.Items.Any(e => e.StockProductId == id))
+            productMessageStore?.Add(() => newProductData.ProductName, "Даний товар уже додано");
         else if (newProductData.Quantity <= 0)
             productMessageStore?.Add(() => newProductData.Quantity, "Введіть додатню кількість");
         else if (newProductData.Quantity > 200)
             productMessageStore?.Add(() => newProductData.Quantity, "Досягнуто максимальної кількості одиниць за одну покупку");
-        else if (newProductData.Quantity > stock.Where(e => e.StockProductId == newProductData.ProductId).First().Quantity)
+        else if (newProductData.Quantity > stock.Where(e => e.StockProductId == id).First().Quantity)
             productMessageStore?.Add(() => newProductData.Quantity, "На складі недостатньо одиниць товару");
     }
     private void HandleProductValidSubmit()
     {
+        int id = stock.FirstOrDefault(e => e.StationeryProduct.Name == newProductData.ProductName).StockProductId;
         newReceipt.Items = newReceipt.Items.Append(new()
             {
-                StockProductId = newProductData.ProductId,
+                StockProductId = id,
                 SellQuantity = newProductData.Quantity,
-                SellPrice = stock.Where(e => e.StockProductId == newProductData.ProductId).First().StationeryProduct.Price
+                SellPrice = stock.Where(e => e.StockProductId == id).First().StationeryProduct.Price
             }).ToArray();
         productMessageStore?.Clear();
-        newProductData.ProductId = -1;
+        newProductData.ProductName = "";
         newProductData.Quantity = 0;
     }
     private async void SaveReceipt()
@@ -326,7 +317,7 @@ else
         var newL = newReceipt.Items.ToList();
         newL.Remove(item);
         newReceipt.Items = newL;
-        newProductData.ProductId = item.StockProductId;
+        newProductData.ProductName = stock.FirstOrDefault(e=>e.StationeryProductId==item.StockProductId).StationeryProduct.Name;
         newProductData.Quantity = item.SellQuantity;
     }
     private void DeleteProduct(StationerySale item)

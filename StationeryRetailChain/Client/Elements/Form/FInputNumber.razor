@@ -1,0 +1,15 @@
+﻿<div class="mb-3">
+    <label class="form-label">@Name:</label>
+    <Microsoft.AspNetCore.Components.Forms.InputNumber Value=@Value ValueChanged=@ValueChanged ValueExpression=@ValueExpression/>
+    <ValidationMessage For=@ValueExpression />
+</div>
+@code {
+    [Parameter]
+    public string Name { get; set; }
+    [Parameter]
+    public virtual int Value { get; set; }
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+    [Parameter]
+    public Expression<Func<int>> ValueExpression { get; set; }
+}

@@ -12,7 +12,5 @@ namespace StationeryRetailChain.Shared.Models
         public StationeryShop Shop { get; set; }
         public int JobId { get; set; }
         public Job Job { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

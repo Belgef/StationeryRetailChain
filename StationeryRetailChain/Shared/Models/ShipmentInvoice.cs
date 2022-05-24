@@ -13,8 +13,11 @@ namespace StationeryRetailChain.Shared.Models
         public int AuthorId { get; set; }
         public Employee? Author { get; set; }
         public decimal TotalSum { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
         public IEnumerable<ShipmentSupply>? ShipmentSupplies { get; set; }
+
+        public override string ToString()
+        {
+            return $"Накладна №{ShipmentInvoiceNumber} за {CreationDate} на {TotalSum} грн";
+        }
     }
 }

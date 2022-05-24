@@ -42,7 +42,8 @@ namespace StationeryRetailChain.Server.Controllers
                 .ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country).ToListAsync();
             }
             else
-                return await _context.ShipmentInvoices.Include(e => e.Supplier).ToListAsync();
+                return await _context.ShipmentInvoices.Include(e => e.Supplier).Include(e=>e.ShipmentSupplies)
+                    .ThenInclude(e=>e.StationeryProduct).Include(e => e.Author).ToListAsync();
         }
 
         // GET: api/ShipmentInvoices/5

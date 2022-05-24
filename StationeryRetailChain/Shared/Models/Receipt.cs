@@ -14,8 +14,6 @@ namespace StationeryRetailChain.Shared.Models
         public Customer? Customer { get; set; }
         public DateTime PurchaseDate { get; set; }
         public decimal PurchaseSum { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
         public IEnumerable<StationerySale>? Items { get; set; }
     }
 }

@@ -37,12 +37,18 @@ namespace StationeryRetailChain.Server.Controllers
                 if (!emp.Job.JobName.ToLower().Contains("supply"))
                     return Forbid();
                 return await _context.DeliveryInvoices.Where(e => e.AuthorId == employeeId)
-                .Include(e => e.Shop).Include(e => e.StationerySupplies).ThenInclude(e => e.StockProduct)
-                .ThenInclude(e => e.StationeryProduct).Include(e => e.Author).ThenInclude(e => e.Shop)
+                .Include(e => e.Shop).Include(e => e.StationerySupplies).ThenInclude(e=>e.StockProduct).ThenInclude(e => e.StationeryProduct)
+                .Include(e=>e.StationerySupplies).ThenInclude(e=>e.ShipmentSupply).Include(e=>e.ShipmentInvoice)
+                .Include(e => e.Author).ThenInclude(e => e.Shop)
                 .ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country).ToListAsync();
             }
             else
-                return await _context.DeliveryInvoices.Include(e => e.Shop).ToListAsync();
+                return await _context.DeliveryInvoices
+                .Include(e => e.Shop).Include(e => e.StationerySupplies).ThenInclude(e => e.StockProduct).ThenInclude(e => e.StationeryProduct)
+                .Include(e=>e.StationerySupplies).ThenInclude(e=>e.ShipmentSupply)
+                .Include(e => e.ShipmentInvoice).ThenInclude(e => e.ShipmentSupplies).ThenInclude(e=>e.StationeryProduct)
+                .Include(e => e.Author).ThenInclude(e => e.Shop)
+                .ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country).ToListAsync();
         }
 
         // GET: api/DeliveryInvoices/5
@@ -99,14 +105,21 @@ namespace StationeryRetailChain.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<DeliveryInvoice>> PostDeliveryInvoice(DeliveryInvoice deliveryInvoice)
         {
-          if (_context.DeliveryInvoices == null)
-          {
-              return Problem("Entity set 'StationeryRetailChainContext.DeliveryInvoices'  is null.");
-          }
-            _context.DeliveryInvoices.Add(deliveryInvoice);
-            await _context.SaveChangesAsync();
+            if (_context.DeliveryInvoices == null)
+            {
+                return Problem("Entity set 'StationeryRetailChainContext.DeliveryInvoices'  is null.");
+            }
 
-            return CreatedAtAction("GetDeliveryInvoice", new { id = deliveryInvoice.DeliveryInvoiceId }, deliveryInvoice);
+            DeliveryInvoice temp = new DeliveryInvoice() { AuthorId=deliveryInvoice.AuthorId, CreationDate=deliveryInvoice.CreationDate, 
+                ShipmentInvoiceId=deliveryInvoice.ShipmentInvoiceId, ShopId=deliveryInvoice.ShopId };
+            _context.DeliveryInvoices.Add(temp);
+            await _context.SaveChangesAsync();
+            await _context.StationerySales.ForEachAsync(e => _context.Entry(e).State = EntityState.Unchanged);
+
+            foreach (var item in deliveryInvoice.StationerySupplies)
+                _context.Database.ExecuteSqlRaw("EXEC PerformSupply {0}, {1}, {2}, {3}", temp.DeliveryInvoiceId, item.StockProductId, item.ShipmentSupplyId, item.Quantity);
+
+            return CreatedAtAction("GetDeliveryInvoice", new { id = temp.DeliveryInvoiceId }, deliveryInvoice);
         }
 
         // DELETE: api/DeliveryInvoices/5

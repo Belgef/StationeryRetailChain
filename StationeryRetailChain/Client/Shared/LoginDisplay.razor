@@ -6,12 +6,12 @@
 
 <AuthorizeView>
     <Authorized>
-        <a class="nav-link btn btn-link" href="authentication/profile">Profile</a>
-        <button class="nav-link btn btn-link" @onclick="BeginSignOut">Log out</button>
+        @*<a class="nav-link btn btn-link" href="authentication/profile">Profile</a>*@
+        <button class="nav-link btn btn-link" @onclick="BeginSignOut">Вийти</button>
     </Authorized>
     <NotAuthorized>
-        <a href="authentication/register">Register</a>
-        <a href="authentication/login">Log in</a>
+        <a href="authentication/register">Зареєструватись</a>
+        <a href="authentication/login">Увійти</a>
     </NotAuthorized>
 </AuthorizeView>
 

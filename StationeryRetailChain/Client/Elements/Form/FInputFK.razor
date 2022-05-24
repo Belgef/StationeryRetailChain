@@ -1,0 +1,22 @@
+﻿<div class="mb-3">
+    <label class="form-label">@Name:</label>
+    <InputSelect Value=@Value ValueChanged=@ValueChanged ValueExpression=@ValueExpression>
+        @foreach(var pair in Options)
+        {
+            <option value=@pair.Key>@pair.Value</option>
+        }
+    </InputSelect>
+    <ValidationMessage For=@ValueExpression />
+</div>
+@code {
+    [Parameter]
+    public string Name { get; set; }
+    [Parameter]
+    public virtual int Value { get; set; }
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+    [Parameter]
+    public Expression<Func<int>> ValueExpression { get; set; }
+    [Parameter]
+    public Dictionary<int,string> Options { get; set; }
+}

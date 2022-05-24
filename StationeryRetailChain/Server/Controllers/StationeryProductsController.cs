@@ -25,10 +25,10 @@ namespace StationeryRetailChain.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<StationeryProduct>>> GetStationeryProducts()
         {
-          if (_context.StationeryProducts == null)
-          {
-              return NotFound();
-          }
+            if (_context.StationeryProducts == null)
+            {
+                return NotFound();
+            }
             return await _context.StationeryProducts.ToListAsync();
         }
 
@@ -36,11 +36,12 @@ namespace StationeryRetailChain.Server.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<StationeryProduct>> GetStationeryProduct(int id)
         {
-          if (_context.StationeryProducts == null)
-          {
-              return NotFound();
-          }
-            var stationeryProduct = await _context.StationeryProducts.FindAsync(id);
+            if (_context.StationeryProducts == null)
+            {
+                return NotFound();
+            }
+            var stationeryProduct = await _context.StationeryProducts.Include(s => s.Manufacturer).Include(s => s.Color).
+                Include(s => s.Type).ThenInclude(t => t.Subcategory).ThenInclude(s => s.Category).FirstOrDefaultAsync(s => s.StationeryProductId == id);
 
             if (stationeryProduct == null)
             {
@@ -86,10 +87,10 @@ namespace StationeryRetailChain.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<StationeryProduct>> PostStationeryProduct(StationeryProduct stationeryProduct)
         {
-          if (_context.StationeryProducts == null)
-          {
-              return Problem("Entity set 'StationeryRetailChainContext.StationeryProducts'  is null.");
-          }
+            if (_context.StationeryProducts == null)
+            {
+                return Problem("Entity set 'StationeryRetailChainContext.StationeryProducts'  is null.");
+            }
             _context.StationeryProducts.Add(stationeryProduct);
             await _context.SaveChangesAsync();
 
@@ -103,6 +104,10 @@ namespace StationeryRetailChain.Server.Controllers
             if (_context.StationeryProducts == null)
             {
                 return NotFound();
+            }
+            if (_context.StockProducts.Any(sp => sp.StationeryProductId == id) || _context.ShipmentSupplies.Any(ss => ss.StationeryProductId == id))
+            {
+                return Problem("Product is used and cannot be deleted.");
             }
             var stationeryProduct = await _context.StationeryProducts.FindAsync(id);
             if (stationeryProduct == null)

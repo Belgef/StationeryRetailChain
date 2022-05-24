@@ -11,34 +11,47 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link lh-sm" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
+                <span class="oi oi-home" aria-hidden="true"></span> Головна сторінка
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link lh-sm" href="seller">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал продавця
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link lh-sm" href="customers">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> База клієнтів
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link lh-sm" href="salesmanager">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал менеджера з продажу
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link lh-sm" href="supplymanagermain">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал поставок на гол. склад
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link lh-sm" href="supplymanagershop">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал поставок у відділення
-            </NavLink>
-        </div>
+        @if((currentEmployee?.Job.JobName.ToLower()??"").Contains("seller") || (currentEmployee?.Job.JobName.ToLower()??"").Contains("admin"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link lh-sm" href="seller">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал продавця
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link lh-sm" href="customers">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> База клієнтів
+                </NavLink>
+            </div>
+        }
+        @if((currentEmployee?.Job.JobName.ToLower()??"").Contains("supply") || (currentEmployee?.Job.JobName.ToLower()??"").Contains("admin"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link lh-sm" href="supplymanagermain">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал поставок на гол. склад
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link lh-sm" href="supplymanagershop">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал поставок у відділення
+                </NavLink>
+            </div>
+        }
+        @if((currentEmployee?.Job.JobName.ToLower()??"").Contains("product") || (currentEmployee?.Job.JobName.ToLower()??"").Contains("admin"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link lh-sm" href="products">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> Термінал менеджера з продажу
+                </NavLink>
+            </div>
+        }
+        
+        
+        
+        
     </nav>
 </div>
 
@@ -50,5 +63,14 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private Employee? currentEmployee;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if(authState?.User.Identity.Name != null)
+            currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
     }
 }

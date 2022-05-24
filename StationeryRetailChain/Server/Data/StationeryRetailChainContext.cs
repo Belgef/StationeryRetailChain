@@ -17,7 +17,7 @@ namespace StationeryRetailChain.Server.Data
         {
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.LogTo(Console.WriteLine).EnableSensitiveDataLogging();
+            => optionsBuilder.LogTo(Console.WriteLine);
 
         public virtual DbSet<Category> Categories { get; set; } = null!;
         public virtual DbSet<City> Cities { get; set; } = null!;
@@ -60,14 +60,6 @@ namespace StationeryRetailChain.Server.Data
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("category_name");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<City>(entity =>
@@ -82,17 +74,9 @@ namespace StationeryRetailChain.Server.Data
                     .IsUnicode(false)
                     .HasColumnName("city_name");
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.StateId).HasColumnName("state_id");
                 entity.HasOne(e => e.State).WithMany()
                 .HasForeignKey(e => e.StateId);
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Color>(entity =>
@@ -112,14 +96,6 @@ namespace StationeryRetailChain.Server.Data
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("color_name");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Country>(entity =>
@@ -133,14 +109,6 @@ namespace StationeryRetailChain.Server.Data
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("country_name");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Customer>(entity =>
@@ -153,10 +121,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.CityId).HasColumnName("city_id");
                 entity.HasOne(e => e.City).WithMany()
                 .HasForeignKey(e => e.CityId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.CustomerName)
                     .HasMaxLength(50)
@@ -172,10 +136,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StreetAddress)
                     .HasMaxLength(255)
                     .HasColumnName("street_address");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<DeliveryInvoice>(entity =>
@@ -188,10 +148,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.AuthorId).HasColumnName("author_id");
                 entity.HasOne(e => e.Author).WithMany()
                 .HasForeignKey(e => e.AuthorId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.CreationDate)
                     .HasColumnType("smalldatetime")
@@ -207,10 +163,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasOne(e => e.Shop).WithMany()
                 .HasForeignKey(e => e.ShopId);
 
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
-
                 entity.HasMany(e => e.StationerySupplies).WithOne().HasForeignKey(e => e.DeliveryInvoiceId);
             });
 
@@ -220,10 +172,6 @@ namespace StationeryRetailChain.Server.Data
 
                 entity.Property(e => e.EmployeeId).HasColumnName("employee_id");
                 entity.HasKey(e => e.EmployeeId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.EmployeeName)
                     .HasMaxLength(50)
@@ -243,10 +191,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.ShopId).HasColumnName("shop_id");
                 entity.HasOne(e => e.Shop).WithMany()
                 .HasForeignKey(e => e.ShopId);
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Job>(entity =>
@@ -256,18 +200,10 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.JobId).HasColumnName("job_id");
                 entity.HasKey(e => e.JobId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.JobName)
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("job_name");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Manufacturer>(entity =>
@@ -278,10 +214,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.ManufacturerId);
 
                 entity.Property(e => e.CountryId).HasColumnName("country_id");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
+                entity.HasOne(e => e.Country).WithMany()
+                .HasForeignKey(e => e.CountryId);
 
                 entity.Property(e => e.ManufacturerName)
                     .HasMaxLength(50)
@@ -293,10 +227,6 @@ namespace StationeryRetailChain.Server.Data
                     .IsUnicode(false)
                     .HasColumnName("phone_number")
                     .IsFixedLength();
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Offer>(entity =>
@@ -305,10 +235,6 @@ namespace StationeryRetailChain.Server.Data
 
                 entity.Property(e => e.OfferId).HasColumnName("offer_id");
                 entity.HasKey(e => e.OfferId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.EndDate)
                     .HasColumnType("smalldatetime")
@@ -327,10 +253,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StartDate)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("start_date");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<OfferStationery>(entity =>
@@ -340,10 +262,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.OfferStationeryId).HasColumnName("offer_stationery_id");
                 entity.HasKey(e => e.OfferStationeryId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.Discount)
                     .HasColumnType("decimal(10, 2)")
                     .HasColumnName("discount");
@@ -351,10 +269,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.OfferId).HasColumnName("offer_id");
 
                 entity.Property(e => e.ProductId).HasColumnName("product_id");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Receipt>(entity =>
@@ -363,10 +277,6 @@ namespace StationeryRetailChain.Server.Data
 
                 entity.Property(e => e.ReceiptId).HasColumnName("receipt_id");
                 entity.HasKey(e => e.ReceiptId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.CustomerId).HasColumnName("customer_id");
                 entity.HasOne(e => e.Customer).WithMany()
@@ -386,10 +296,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasOne(e => e.Seller).WithMany()
                 .HasForeignKey(e => e.SellerId);
 
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
-
                 entity.HasMany(e => e.Items).WithOne().HasForeignKey(e => e.ReceiptId);
             });
 
@@ -404,10 +310,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasOne(e => e.Author).WithMany()
                 .HasForeignKey(e => e.AuthorId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.CreationDate)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("creation_date");
@@ -419,10 +321,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.TotalSum)
                     .HasColumnType("decimal(10, 2)")
                     .HasColumnName("total_sum");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
 
                 entity.HasMany(e => e.ShipmentSupplies).WithOne().HasForeignKey(e => e.ShipmentInvoiceId);
             });
@@ -437,20 +335,12 @@ namespace StationeryRetailChain.Server.Data
                     .HasColumnType("decimal(10, 2)")
                     .HasColumnName("cost");
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.Quantity).HasColumnName("quantity");
 
                 entity.Property(e => e.ShipmentSupplyId).HasColumnName("shipment_supply_id");
                 entity.HasKey(e => e.ShipmentSupplyId);
 
                 entity.Property(e => e.StationeryProductId).HasColumnName("stationery_product_id");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<State>(entity =>
@@ -464,18 +354,10 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasOne(e => e.Country).WithMany()
                 .HasForeignKey(e => e.CountryId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.StateName)
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("state_name");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<StationeryProduct>(entity =>
@@ -492,10 +374,8 @@ namespace StationeryRetailChain.Server.Data
                     .IsFixedLength();
 
                 entity.Property(e => e.ColorId).HasColumnName("color_id");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
+                entity.HasOne(e => e.Color).WithMany()
+                .HasForeignKey(e => e.ColorId);
 
                 entity.Property(e => e.Description)
                     .HasMaxLength(255)
@@ -509,6 +389,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.Length).HasColumnName("length");
 
                 entity.Property(e => e.ManufacturerId).HasColumnName("manufacturer_id");
+                entity.HasOne(e => e.Manufacturer).WithMany()
+                .HasForeignKey(e => e.ManufacturerId);
 
                 entity.Property(e => e.MinimumAge).HasColumnName("minimum_age");
 
@@ -524,10 +406,8 @@ namespace StationeryRetailChain.Server.Data
                     .HasColumnName("price");
 
                 entity.Property(e => e.TypeId).HasColumnName("type_id");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
+                entity.HasOne(e => e.Type).WithMany()
+                .HasForeignKey(e => e.TypeId);
 
                 entity.Property(e => e.Width).HasColumnName("width");
             });
@@ -538,10 +418,6 @@ namespace StationeryRetailChain.Server.Data
 
                 entity.Property(e => e.SaleId).HasColumnName("sale_id");
                 entity.HasKey(e => e.SaleId);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.ReceiptId).HasColumnName("receipt_id");
 
@@ -554,10 +430,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StockProductId).HasColumnName("stock_product_id");
                 entity.HasOne(e => e.StockProduct).WithMany()
                 .HasForeignKey(e => e.StockProductId);
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<StationeryShop>(entity =>
@@ -571,10 +443,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasOne(e => e.City).WithMany()
                 .HasForeignKey(e => e.CityId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.PhoneNumber)
                     .HasMaxLength(10)
                     .IsUnicode(false)
@@ -584,10 +452,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StreetAddress)
                     .HasMaxLength(255)
                     .HasColumnName("street_address");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<StationerySupply>(entity =>
@@ -597,21 +461,17 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StationerySupplyId).HasColumnName("stationery_supply_id");
                 entity.HasKey(e => e.StationerySupplyId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.DeliveryInvoiceId).HasColumnName("delivery_invoice_id");
 
                 entity.Property(e => e.Quantity).HasColumnName("quantity");
 
                 entity.Property(e => e.ShipmentSupplyId).HasColumnName("shipment_supply_id");
+                entity.HasOne(e => e.ShipmentSupply).WithMany()
+                .HasForeignKey(e => e.ShipmentSupplyId);
 
                 entity.Property(e => e.StockProductId).HasColumnName("stock_product_id");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
+                entity.HasOne(e => e.StockProduct).WithMany()
+                .HasForeignKey(e => e.StockProductId);
             });
 
             modelBuilder.Entity<StockProduct>(entity =>
@@ -621,10 +481,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StockProductId).HasColumnName("stock_product_id");
                 entity.HasKey(e => e.StockProductId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.Quantity).HasColumnName("quantity");
 
                 entity.Property(e => e.ShopId).HasColumnName("shop_id");
@@ -632,10 +488,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StationeryProductId).HasColumnName("stationery_product_id");
                 entity.HasOne(e => e.StationeryProduct).WithMany()
                 .HasForeignKey(e => e.StationeryProductId);
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Subcategory>(entity =>
@@ -646,19 +498,13 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.SubcategoryId);
 
                 entity.Property(e => e.CategoryId).HasColumnName("category_id");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
+                entity.HasOne(e => e.Category).WithMany()
+                .HasForeignKey(e => e.CategoryId);
 
                 entity.Property(e => e.SubcategoryName)
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("subcategory_name");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<SupplierCompany>(entity =>
@@ -669,10 +515,6 @@ namespace StationeryRetailChain.Server.Data
                 entity.HasKey(e => e.SupplierId);
 
                 entity.Property(e => e.CityId).HasColumnName("city_id");
-
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
 
                 entity.Property(e => e.PhoneNumber)
                     .HasMaxLength(10)
@@ -688,10 +530,6 @@ namespace StationeryRetailChain.Server.Data
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("supplier_name");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             modelBuilder.Entity<Shared.Models.Type>(entity =>
@@ -701,20 +539,14 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.TypeId).HasColumnName("type_id");
                 entity.HasKey(e => e.TypeId);
 
-                entity.Property(e => e.CreatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("created_at");
-
                 entity.Property(e => e.SubcategoryId).HasColumnName("subcategory_id");
+                entity.HasOne(e => e.Subcategory).WithMany()
+                .HasForeignKey(e => e.SubcategoryId);
 
                 entity.Property(e => e.TypeName)
                     .HasMaxLength(50)
                     .IsUnicode(false)
                     .HasColumnName("type_name");
-
-                entity.Property(e => e.UpdatedAt)
-                    .HasColumnType("smalldatetime")
-                    .HasColumnName("updated_at");
             });
 
             OnModelCreatingPartial(modelBuilder);

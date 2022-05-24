@@ -1,0 +1,387 @@
+﻿@page "/supplymanagershop"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations;
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+@if (currentEmployee == null)
+{
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("supply")))
+{
+    <h1 class="display-6 text-center">Доступ заблоковано</h1>
+}
+else
+{
+    <h1 class="display-6 text-center">Термінал поставок у відділення</h1>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Дані про менеджера</h5>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Ім'я та прізвище: @currentEmployee.EmployeeName</li>
+            <li class="list-group-item">Посада: @currentEmployee.Job.JobName</li>
+            <li class="list-group-item">Адреса відділення: @currentEmployee.Shop.StreetAddress</li>
+        </ul>
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>{newInvoice=null;action=Action.Create;}">Нова поставка</button>
+            @if (action != Action.History)
+            {
+                <button class="btn btn-primary" @onclick="()=>action=Action.History">Показати історію поставок</button>
+            }
+            @if (action != Action.InfoStock)
+            {
+                <button class="btn btn-primary" @onclick="()=>action=Action.InfoStock">Склад</button>
+            }
+        </div>
+    </div>
+    @switch (action)
+    {
+        case Action.History:
+            <p class="h4 m-4">Історія поставок</p>
+            @if (invoices != null)
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Номер накладної на поставку у відділення</th>
+                            <th scope="col">Номер головної накладної на поставку</th>
+                            <th scope="col">Сума поставки</th>
+                            <th scope="col">Час створення</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in invoices.OrderByDescending(e => e.CreationDate))
+                        {
+                            <tr style="cursor:pointer;">
+                                <td @onclick="()=>GetInvoice(item)">@item.DeliveryInvoiceNumber</td>
+                                <td @onclick="()=>GetInvoice(item)">@item.ShipmentInvoice.ShipmentInvoiceNumber</td>
+                                <td @onclick="()=>GetInvoice(item)">@item.StationerySupplies.Sum(e=>e.Quantity*e.ShipmentSupply.Cost)</td>
+                                <td @onclick="()=>GetInvoice(item)">@item.CreationDate</td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>DownloadPdf(item)"><i class="fa-solid fa-file-pdf"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            break;
+        case Action.Details:
+            <div class="card m-4">
+                <div class="card-header">
+                    Накладна №@currentInvoice.DeliveryInvoiceNumber
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Номер головної накладної на поставку: @currentInvoice.ShipmentInvoice.ShipmentInvoiceNumber</li>
+                    <li class="list-group-item">Адреса відділення: @currentEmployee.Shop.StreetAddress</li>
+                    <li class="list-group-item">Сума поставки: @currentInvoice.StationerySupplies.Sum(e=>e.Quantity*e.ShipmentSupply.Cost)</li>
+                    <li class="list-group-item">Час створення накладної: @currentInvoice.CreationDate</li>
+                </ul>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Товар</th>
+                                <th scope="col">Собівартість</th>
+                                <th scope="col">Кількість</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in currentInvoice.StationerySupplies)
+                            {
+                                <tr>
+                                    <td>@item.StockProduct.StationeryProduct.Name</td>
+                                    <td>@item.ShipmentSupply.Cost</td>
+                                    <td>@item.Quantity</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            break;
+        case Action.Create:
+            <p class="h4 m-4">Створення накладної на поставку у відділення</p>
+
+            @if (newInvoice == null)
+            {
+                <EditForm EditContext="invoiceEditContext" OnValidSubmit="@HandleInvoiceValidSubmit">
+                    <div class="mb-3">
+                        <label class="form-label">Виберіть головну накладну:</label>
+                        <InputSelect @bind-Value="newInvoiceData.ShipmentInvoiceId">
+                            @foreach (var inv in AvailableInvoices())
+                            {
+                                <option value=@inv.ShipmentInvoiceId>@inv</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => newInvoiceData.ShipmentInvoiceId" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Обрати товари</button>
+                </EditForm>
+            }
+            else
+            {
+                <p>@mainInvoices.FirstOrDefault(e=>e.ShipmentInvoiceId==newInvoiceData.ShipmentInvoiceId)</p>
+                <p class="h5 m-3">Товари</p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Товар</th>
+                            <th scope="col">Собівартість</th>
+                            <th scope="col">Вартість товару на даний момент</th>
+                            <th scope="col">Кількість</th>
+                            <th scope="col">Наявний залишок згідно головної накладної</th>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in newInvoice?.StationerySupplies)
+                        {
+                            <tr>
+                                <td>@(products.FirstOrDefault(e=>e.StationeryProductId==item.StockProduct.StationeryProductId)?.Name)</td>
+                                <td>@CurrentShipmentInvoice.ShipmentSupplies.FirstOrDefault(e=>e.StationeryProductId==item.StockProduct.StationeryProductId).Cost</td>
+                                <td>@(products.FirstOrDefault(e=>e.StationeryProductId==item.StockProduct.StationeryProductId)?.Price)</td>
+                                <td>@item.Quantity</td>
+                                <td>@leftQuantities[item.StockProduct.StationeryProductId]</td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>EditProduct(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>DeleteProduct(item)"><i class="fa-solid fa-eraser"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <EditForm EditContext="productEditContext" OnValidSubmit="@HandleProductValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationMessage For="() => newProductData" />
+                    <div class="mb-3">
+                        <label class="form-label">Товар</label>
+                        <InputSelect @bind-Value="newProductData.ProductId">
+                            @foreach (var prod in CurrentShipmentInvoice.ShipmentSupplies@*products.Where(e=>!newInvoice.StationerySupplies.Any(e2=>e2.StockProduct.StationeryProductId==e.StationeryProductId))*@)
+                            {
+                                <option value=@prod.StationeryProductId>@($"{prod.StationeryProduct.Name}(залишилось {prod.Quantity-allInvoices.Where(i => i.ShipmentInvoiceId == newInvoiceData.ShipmentInvoiceId).SelectMany(e => e.StationerySupplies).Where(e => e.StockProduct.StationeryProductId==prod.StationeryProductId).Sum(e=>e.Quantity)} шт.)")</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => newProductData.ProductId" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Кількість</label>
+                        <InputNumber @bind-Value="newProductData.Quantity" />
+                        <ValidationMessage For="() => newProductData.Quantity" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Додати</button>
+                    @if ((newInvoice.StationerySupplies?.Count() ?? 0) >= 1)
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="@SaveReceipt">Додати накладну</button>
+                    }
+                </EditForm>
+            }
+            break;
+        case Action.InfoStock:
+            <p class="h4 m-4">Товари на складі</p>
+            @if (stock != null)
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Назва товару</th>
+                            <th scope="col">Ціна</th>
+                            <th scope="col">Кількість</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var prod in stock.OrderBy(e => e.StationeryProduct.Name))
+                        {
+                            <tr>
+                                <td>@prod.StationeryProduct.Name</td>
+                                <td>@prod.StationeryProduct.Price</td>
+                                <td>@prod.Quantity</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            break;
+    }
+}
+
+@code {
+    private enum Action { History, Details, Create, InfoStock }
+    private Action action = Action.History;
+
+    private Employee? currentEmployee;
+    private DeliveryInvoice[]? invoices;
+    private DeliveryInvoice[]? allInvoices;
+    private ShipmentInvoice[]? mainInvoices;
+    private StockProduct[]? stock;
+    private StationeryProduct[]? products;
+
+    //ReceiptDetails
+    private DeliveryInvoice? currentInvoice;
+
+    //CreateReceipt
+    private EditContext? invoiceEditContext;
+    private class InvoiceData { public int ShipmentInvoiceId { get; set; } }
+    private InvoiceData newInvoiceData = new();
+    private DeliveryInvoice? newInvoice;
+    private ValidationMessageStore? invoiceMessageStore;
+    private Dictionary<int, int>? leftQuantities;
+
+    private EditContext? productEditContext;
+    private class ProductData { 
+        [Required]
+        public int ProductId { get; set; } 
+        [Required]
+        public int Quantity { get; set; } 
+    }
+    private ProductData newProductData = new();
+    private ValidationMessageStore? productMessageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
+        if (currentEmployee.Job.JobName.ToLower().Contains("supply"))
+            await LoadDataAsync();
+    }
+    public async Task LoadDataAsync()
+    {
+        try
+        {
+            allInvoices = await Http.GetFromJsonAsync<DeliveryInvoice[]>("api/deliveryinvoices");
+            invoices = allInvoices.Where(i => i.AuthorId == currentEmployee.EmployeeId).ToArray();
+            mainInvoices = await Http.GetFromJsonAsync<ShipmentInvoice[]>("api/shipmentinvoices");
+            stock = await Http.GetFromJsonAsync<StockProduct[]>("api/stockproducts?shopId=" + currentEmployee.ShopId);
+            products = await Http.GetFromJsonAsync<StationeryProduct[]>("api/stationeryproducts");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+    public void GetInvoice(DeliveryInvoice invoice)
+    {
+        currentInvoice = invoice;
+        action = Action.Details;
+    }
+
+    protected override void OnInitialized()
+    {
+        invoiceEditContext = new(newInvoiceData);
+        invoiceEditContext.OnValidationRequested += HandleInvoiceValidationRequested;
+        invoiceMessageStore = new(invoiceEditContext);
+        productEditContext = new(newProductData);
+        productEditContext.OnValidationRequested += HandleProductValidationRequested;
+        productMessageStore = new(productEditContext);
+    }
+    private void HandleInvoiceValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        invoiceMessageStore?.Clear();
+        if (newInvoiceData.ShipmentInvoiceId<=0)
+            invoiceMessageStore?.Add(() => newInvoiceData.ShipmentInvoiceId, "Будь ласка, оберіть основну накладну на поставку");
+    }
+    private ShipmentInvoice? CurrentShipmentInvoice => mainInvoices.FirstOrDefault(e => e.ShipmentInvoiceId == newInvoiceData.ShipmentInvoiceId);
+    private void HandleInvoiceValidSubmit()
+    {
+        newInvoice = new DeliveryInvoice()
+            {
+                ShipmentInvoiceId = newInvoiceData.ShipmentInvoiceId,
+                AuthorId = currentEmployee.EmployeeId,
+                ShopId = currentEmployee.ShopId,
+                CreationDate = DateTime.Now,
+                StationerySupplies = new StationerySupply[] { }
+            };
+        invoiceMessageStore?.Clear();
+        var usedQuantities = allInvoices.Where(i => i.ShipmentInvoiceId == newInvoiceData.ShipmentInvoiceId).SelectMany(e => e.StationerySupplies).GroupBy(e => e.StockProduct.StationeryProductId)
+            .Select(e => new { StationeryProductId = e.Key, Quantity = e.Sum(e2 => e2.Quantity) });
+        leftQuantities = CurrentShipmentInvoice.ShipmentSupplies.ToDictionary(e => e.StationeryProductId, e => e.Quantity - (usedQuantities.FirstOrDefault(d => d.StationeryProductId == e.StationeryProductId)?.Quantity ?? 0));
+    }
+    private void HandleProductValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        productMessageStore?.Clear();
+
+        if (newProductData.ProductId <= 0)
+            productMessageStore?.Add(() => newProductData.ProductId, "Будь ласка, оберіть товар");
+        else if (newInvoice.StationerySupplies.Any(e => e.StockProduct.StationeryProductId == newProductData.ProductId))
+            productMessageStore?.Add(() => newProductData.ProductId, "Даний товар уже додано");
+        else if (newProductData.Quantity <= 0)
+            productMessageStore?.Add(() => newProductData.Quantity, "Введіть додатню кількість");
+        else if (newProductData.Quantity > 1000)
+            productMessageStore?.Add(() => newProductData.Quantity, "Досягнуто максимальної кількості одиниць за одну поставку");
+        else if (newProductData.Quantity > leftQuantities[newProductData.ProductId])
+            productMessageStore?.Add(() => newProductData.Quantity, "На головному складі недостатньо одиниць товару");
+    }
+    private async void HandleProductValidSubmit()
+    {
+        StockProduct? sp = stock.FirstOrDefault(e=>e.StationeryProductId==newProductData.ProductId && e.ShopId==currentEmployee.ShopId);
+        if(sp==null)
+        {
+            sp = new() { StationeryProductId = newProductData.ProductId, ShopId = currentEmployee.ShopId, Quantity = 0 };
+            var result = await Http.PostAsJsonAsync("api/stockproducts", sp);
+            if(!result.IsSuccessStatusCode)
+                await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+        }
+
+        newInvoice.StationerySupplies = newInvoice.StationerySupplies.Append(new()
+            {
+                StockProductId = sp.StockProductId,
+                StockProduct = sp,
+                ShipmentSupplyId = CurrentShipmentInvoice.ShipmentSupplies.FirstOrDefault(e=>e.StationeryProductId==newProductData.ProductId).ShipmentSupplyId,
+                Quantity = newProductData.Quantity
+            }).ToArray();
+        productMessageStore?.Clear();
+        newProductData.ProductId = -1;
+        newProductData.Quantity = 0;
+        this.StateHasChanged();
+    }
+    private async void SaveReceipt()
+    {
+        var result = await Http.PostAsJsonAsync("api/deliveryinvoices", newInvoice);
+        await LoadDataAsync();
+        if(result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Накладну створено успішно" });
+            newInvoiceData.ShipmentInvoiceId = -1;
+            newInvoice = null;
+            action = Action.History;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private void EditProduct(StationerySupply item)
+    {
+        var newL = newInvoice.StationerySupplies.ToList();
+        newL.Remove(item);
+        newInvoice.StationerySupplies = newL;
+        newProductData.ProductId = item.StockProduct.StationeryProductId;
+        newProductData.Quantity = item.Quantity;
+    }
+    private void DeleteProduct(StationerySupply item)
+    {
+        var newL = newInvoice.StationerySupplies.ToList();
+        newL.Remove(item);
+        newInvoice.StationerySupplies = newL;
+    }
+    private async void DownloadPdf(DeliveryInvoice item)
+    {
+        using var streamRef = new DotNetStreamReference(stream: PdfBuilder.CreateDeliveryInvoice(item));
+        await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "invoice"+item.DeliveryInvoiceNumber+".pdf", streamRef);
+    }
+    private ShipmentInvoice[] AvailableInvoices()
+    {
+        return mainInvoices.Where(inv =>{
+            var a = allInvoices.Where(i => i.ShipmentInvoiceId == inv.ShipmentInvoiceId);
+            var b = a.SelectMany(e => e.StationerySupplies).GroupBy(e => e.StockProduct.StationeryProductId);
+            var c = b.Select(e => new { StationeryProductId = e.Key, Quantity = e.Sum(e2 => e2.Quantity) }).ToList();
+            var d = c.All(e => e.Quantity >= (inv.ShipmentSupplies.FirstOrDefault(e2 => e2.StationeryProductId == e.StationeryProductId)?.Quantity ?? 0));
+            return a.Count()==0||!d;
+        }
+        ).ToArray();
+    }
+}

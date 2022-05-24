@@ -1,0 +1,38 @@
+﻿<div class="card m-4">
+    @if (Header != null)
+    {
+        <div class="card-header">@Header</div>
+    }
+    <div class="card-body">
+        @if (Title != null)
+        {
+            <h5 class="card-title">@Title</h5>
+        }
+        @if (Description != null)
+        {
+            <p class="card-text">@Description</p>
+        }
+    </div>
+    <table class="table table-striped">
+        <tbody>
+            @foreach (var pair in Parameters)
+            {
+                <tr>
+                    <th scope="row" style="width:10%">@pair.Key</th>
+                    <td>@pair.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public string? Header { get; set; }
+    [Parameter]
+    public string? Title { get; set; }
+    [Parameter]
+    public string? Description { get; set; }
+    [Parameter]
+    public Dictionary<string, string> Parameters { get; set; } = new();
+}

@@ -1,0 +1,162 @@
+﻿@switch (action)
+{
+    case Action.All:
+        <p class="h4 m-4">Список виробників</p>
+        @if (items != null)
+        {
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати виробника</button>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Назва</th>
+                        <th scope="col">Контактний номер телефону</th>
+                        <th scope="col">Країна</th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items.OrderBy(c => c.ManufacturerName))
+                    {
+                        <tr>
+                            <td>@item.ManufacturerName</td>
+                            <td>@item.PhoneNumber</td>
+                            <td>@item.Country?.CountryName</td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        break;
+    case Action.Add:
+    case Action.Edit:
+        <p class="h4 m-4">@((action==Action.Add)?"Додати виробника":"Редагувати виробника")</p>
+        <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <FInputString Name="Назва" @bind-Value="newData.Name" />
+            <FInputString Name="Код" @bind-Value="newData.Phone" />
+            <FInputFK Name="Країна" @bind-Value="newData.CountryId" Options=@(countries.ToDictionary(e=>e.CountryId??0,e=>e.CountryName)) />
+            <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
+        </EditForm>
+        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список виробників</button>
+        break;
+}
+
+@code {
+
+    private enum Action { All, Add, Edit }
+    private Action action = Action.All;
+
+    private const string Path = "api/manufacturers";
+
+    private Manufacturer[]? items;
+    private Country[]? countries;
+
+    //Create
+    private EditContext? editContext;
+    private class InputData
+    {
+        public int Id { get; set; } = 0;
+        [Required]
+        [StringLength(50, MinimumLength = 5, ErrorMessage = "Назва має мати розмір від {2} до {1} символів.")]
+        public string Name { get; set; } = "";
+        [Required]
+        [RegularExpression(@"\d{10}", ErrorMessage = "Номер телефону у невірному форматі.")]
+        public string Phone { get; set; } = "";
+        [Required]
+        public int CountryId { get; set; }
+    }
+    private InputData newData = new();
+    private Manufacturer? newItem;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+    public async Task LoadDataAsync()
+    {
+        try
+        {
+            items = await Http.GetFromJsonAsync<Manufacturer[]>(Path);
+            countries = await Http.GetFromJsonAsync<Country[]>("api/countries");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(newData);
+        messageStore = new(editContext);
+    }
+    private void HandleValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        messageStore?.Clear();
+        if (newData.CountryId <= 0)
+            messageStore?.Add(() => newData.CountryId, "Будь ласка, оберіть країну");
+    }
+    private async void HandleValidSubmit()
+    {
+        newItem = new Manufacturer()
+            {
+                CountryId = newData.CountryId,
+                ManufacturerId = newData.Id,
+                ManufacturerName = newData.Name,
+                PhoneNumber = newData.Phone
+            };
+        messageStore?.Clear();
+
+        HttpResponseMessage result;
+        if (action == Action.Add)
+            result = await Http.PostAsJsonAsync(Path, newItem);
+        else
+        {
+            newItem.ManufacturerId = newData.Id;
+            result = await Http.PutAsJsonAsync(Path+"/" + newData.Id, newItem);
+        }
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Виробника додано" : "Виробника редаговано" });
+            ClearForm();
+            newItem = null;
+            action = Action.All;
+            await LoadDataAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private void ClearForm()
+    {
+        newData.Name = "";
+        newData.Id = -1;
+        newData.Phone = "";
+        newData.CountryId = -1;
+    }
+    private void Edit(Manufacturer item)
+    {
+        newData.Phone = item.PhoneNumber;
+        newData.Id = item.ManufacturerId ?? 0;
+        newData.Name = item.ManufacturerName ?? "";
+        newData.CountryId = item.CountryId ?? -1;
+        action = Action.Edit;
+    }
+    private async void Delete(Manufacturer item)
+    {
+        var result = await Http.DeleteAsync(Path+"/" + item.ManufacturerId);
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Виробника видалено" });
+            await LoadDataAsync();
+            action = Action.All;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цього виробника" });
+    }
+}
