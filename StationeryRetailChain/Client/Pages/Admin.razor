@@ -1,0 +1,52 @@
+﻿@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations;
+@using StationeryRetailChain.Client.Elements;
+@using StationeryRetailChain.Client.Elements.Form;
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (currentEmployee == null)
+{
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("admin")))
+{
+    <h1 class="display-6 text-center">Доступ заблоковано</h1>
+}
+else
+{
+    <h1 class="display-6 text-center">Термінал менеджера з продажу</h1>
+    <div class="card">
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>action=Action.Employees">Працівники</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Shops">Відділення</button>
+        </div>
+    </div>
+    @switch (action)
+    {
+        case Action.Employees:
+            <EmployeeManager />
+            break;
+        case Action.Shops:
+            <ShopManager />
+            break;
+    }
+}
+
+@code {
+    private enum Action { Employees, Shops }
+    private Action action = Action.Employees;
+
+    private Employee? currentEmployee;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
+    }
+}

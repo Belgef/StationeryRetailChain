@@ -40,7 +40,7 @@ else
     </div>
     <div class="mb-3">
         <label class="form-label" style="position:relative; top:-0.1em">Тип:</label>
-        <RadzenAutoComplete Data=@types.Where(c=>c.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId) TextProperty="CityName" @bind-Value="TypeName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId)) />
+        <RadzenAutoComplete Data=@types.Where(c=>c.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId) TextProperty="TypeName" @bind-Value="TypeName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId)) />
         @if(TypeName != null && TypeName != "" && !types.Any(e=>e.TypeName==TypeName && e.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId))
         {
             <div class="alert alert-primary d-flex align-items-center" role="alert">

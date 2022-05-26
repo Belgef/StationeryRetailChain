@@ -13,7 +13,7 @@
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else if (!(currentEmployee.Job.JobName.ToLower().Contains("supply")))
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("supply")|| currentEmployee.Job.JobName.ToLower().Contains("admin")))
 {
     <h1 class="display-6 text-center">Доступ заблоковано</h1>
 }
@@ -291,7 +291,7 @@ else
         newInvoice = new DeliveryInvoice()
             {
                 ShipmentInvoiceId = newInvoiceData.ShipmentInvoiceId,
-                AuthorId = currentEmployee.EmployeeId,
+                AuthorId = currentEmployee.EmployeeId ?? 0,
                 ShopId = currentEmployee.ShopId,
                 CreationDate = DateTime.Now,
                 StationerySupplies = new StationerySupply[] { }

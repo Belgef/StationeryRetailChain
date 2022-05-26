@@ -253,6 +253,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.StartDate)
                     .HasColumnType("smalldatetime")
                     .HasColumnName("start_date");
+
+                entity.HasMany(e => e.Items).WithOne().HasForeignKey(e => e.OfferId);
             });
 
             modelBuilder.Entity<OfferStationery>(entity =>
@@ -269,6 +271,8 @@ namespace StationeryRetailChain.Server.Data
                 entity.Property(e => e.OfferId).HasColumnName("offer_id");
 
                 entity.Property(e => e.ProductId).HasColumnName("product_id");
+                entity.HasOne(e => e.Product).WithMany()
+                .HasForeignKey(e => e.ProductId);
             });
 
             modelBuilder.Entity<Receipt>(entity =>

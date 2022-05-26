@@ -29,7 +29,7 @@ namespace StationeryRetailChain.Server.Controllers
           {
               return NotFound();
           }
-            return await _context.Employees.ToListAsync();
+            return await _context.Employees.Include(e=>e.Shop).ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country).Include(e=>e.Job).ToListAsync();
         }
 
         // GET: api/Employees/5

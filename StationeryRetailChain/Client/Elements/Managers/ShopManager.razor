@@ -1,27 +1,25 @@
 ﻿@switch (action)
 {
     case Action.All:
-        <p class="h4 m-4">Список виробників</p>
+        <p class="h4 m-4">Список відділень</p>
         @if (items != null)
         {
-            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати виробника</button>
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати відділення</button>
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th scope="col">Назва</th>
+                        <th scope="col">Адреса</th>
                         <th scope="col">Контактний номер телефону</th>
-                        <th scope="col">Країна</th>
                         <th scope="col"></th>
                         <th scope="col"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in items.OrderBy(c => c.ManufacturerName))
+                    @foreach (var item in items.OrderBy(c => c.CityId))
                     {
                         <tr>
-                            <td>@item.ManufacturerName</td>
+                            <td>@($"{item.StreetAddress}, {item.City?.CityName}, {item.City?.State?.StateName}, {item.City?.State?.Country?.CountryName}")</td>
                             <td>@item.PhoneNumber</td>
-                            <td>@item.Country?.CountryName</td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
                         </tr>
@@ -32,15 +30,15 @@
         break;
     case Action.Add:
     case Action.Edit:
-        <p class="h4 m-4">@((action==Action.Add)?"Додати виробника":"Редагувати виробника")</p>
+        <p class="h4 m-4">@((action==Action.Add)?"Додати відділення":"Редагувати відділення")</p>
         <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
-            <FInputString Name="Назва" @bind-Value="newData.Name" />
             <FInputString Name="Телефон" @bind-Value="newData.Phone" />
-            <FInputFK Name="Країна" @bind-Value="newData.CountryId" Options=@(countries.ToDictionary(e=>e.CountryId??0,e=>e.CountryName)) />
+            <FInputString Name="Адреса" @bind-Value="newData.Address" />
+            <FInputCity @bind-Value="newData.CityId"/>
             <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
         </EditForm>
-        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список виробників</button>
+        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список відділень</button>
         break;
 }
 
@@ -49,10 +47,9 @@
     private enum Action { All, Add, Edit }
     private Action action = Action.All;
 
-    private const string Path = "api/manufacturers";
+    private const string Path = "api/stationeryshops";
 
-    private Manufacturer[]? items;
-    private Country[]? countries;
+    private StationeryShop[]? items;
 
     //Create
     private EditContext? editContext;
@@ -60,16 +57,16 @@
     {
         public int Id { get; set; } = 0;
         [Required]
-        [StringLength(50, MinimumLength = 5, ErrorMessage = "Назва має мати розмір від {2} до {1} символів.")]
-        public string Name { get; set; } = "";
-        [Required]
         [RegularExpression(@"\d{10}", ErrorMessage = "Номер телефону у невірному форматі.")]
         public string Phone { get; set; } = "";
         [Required]
-        public int CountryId { get; set; }
+        [StringLength(255, MinimumLength = 5, ErrorMessage = "Адреса має мати розмір від {2} до {1} символів.")]
+        public string? Address { get; set; }
+        [Required]
+        public int CityId { get; set; }
     }
     private InputData newData = new();
-    private Manufacturer? newItem;
+    private StationeryShop? newItem;
     private ValidationMessageStore? messageStore;
 
     protected override async Task OnInitializedAsync()
@@ -80,8 +77,7 @@
     {
         try
         {
-            items = await Http.GetFromJsonAsync<Manufacturer[]>(Path);
-            countries = await Http.GetFromJsonAsync<Country[]>("api/countries");
+            items = await Http.GetFromJsonAsync<StationeryShop[]>(Path);
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -97,16 +93,16 @@
     private void HandleValidationRequested(object? sender, ValidationRequestedEventArgs args)
     {
         messageStore?.Clear();
-        if (newData.CountryId <= 0)
-            messageStore?.Add(() => newData.CountryId, "Будь ласка, оберіть країну");
+        if (newData.CityId <= 0)
+            messageStore?.Add(() => newData.CityId, "Будь ласка, оберіть місто");
     }
     private async void HandleValidSubmit()
     {
-        newItem = new Manufacturer()
+        newItem = new StationeryShop()
             {
-                CountryId = newData.CountryId,
-                ManufacturerId = newData.Id,
-                ManufacturerName = newData.Name,
+                CityId = newData.CityId,
+                ShopId = newData.Id,
+                StreetAddress = newData.Address,
                 PhoneNumber = newData.Phone
             };
         messageStore?.Clear();
@@ -116,12 +112,12 @@
             result = await Http.PostAsJsonAsync(Path, newItem);
         else
         {
-            newItem.ManufacturerId = newData.Id;
+            newItem.ShopId = newData.Id;
             result = await Http.PutAsJsonAsync(Path+"/" + newData.Id, newItem);
         }
         if (result.IsSuccessStatusCode)
         {
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Виробника додано" : "Виробника редаговано" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Відділення додано" : "Відділення редаговано" });
             ClearForm();
             newItem = null;
             action = Action.All;
@@ -133,30 +129,30 @@
     }
     private void ClearForm()
     {
-        newData.Name = "";
         newData.Id = -1;
         newData.Phone = "";
-        newData.CountryId = -1;
+        newData.CityId = -1;
+        newData.Address = "";
     }
-    private void Edit(Manufacturer item)
+    private void Edit(StationeryShop item)
     {
         newData.Phone = item.PhoneNumber;
-        newData.Id = item.ManufacturerId ?? 0;
-        newData.Name = item.ManufacturerName ?? "";
-        newData.CountryId = item.CountryId ?? -1;
+        newData.Id = item.ShopId ?? 0;
+        newData.Address = item.StreetAddress ?? "";
+        newData.CityId = item.CityId ?? -1;
         action = Action.Edit;
     }
-    private async void Delete(Manufacturer item)
+    private async void Delete(StationeryShop item)
     {
-        var result = await Http.DeleteAsync(Path+"/" + item.ManufacturerId);
+        var result = await Http.DeleteAsync(Path+"/" + item.ShopId);
         if (result.IsSuccessStatusCode)
         {
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Виробника видалено" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Відділення видалено" });
             await LoadDataAsync();
             action = Action.All;
             this.StateHasChanged();
         }
         else
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цього виробника" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити це відділення" });
     }
 }

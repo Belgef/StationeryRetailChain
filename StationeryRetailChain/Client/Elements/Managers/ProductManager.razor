@@ -65,7 +65,7 @@
             <FInputString Name="Штрих-код" @bind-Value="newData.BarCode" />
             <FInputFK Name="Виробник" @bind-Value="newData.ManufacturerId" Options=@(manufacturers.ToDictionary(e=>e.ManufacturerId??0,e=>e.ManufacturerName)) />
             <FInputString Name="Ціна" @bind-Value="newData.Price" />
-            <FInputFK Name="Тип" @bind-Value="newData.TypeId" Options=@(types.ToDictionary(e=>e.TypeId??0,e=>$"{e.Subcategory?.Category?.CategoryName} / {e.Subcategory?.SubcategoryName} / {e.TypeName}")) />
+            <FInputType @bind-Value="newData.TypeId" />
             <FInputString Name="Розмір" @bind-Value="newData.Size" />
             <FInputNumber Name="Кількість в упаковці" @bind-Value="newData.ItemsPerPackage" />
             <FInputNumber Name="Кількість упаковок у коробці" @bind-Value="newData.PackagesPerBox" />

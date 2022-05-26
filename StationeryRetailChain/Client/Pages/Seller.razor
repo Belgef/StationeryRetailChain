@@ -8,7 +8,7 @@
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller")))
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller")|| currentEmployee.Job.JobName.ToLower().Contains("admin")))
 {
     <h1 class="display-6 text-center">Доступ заблоковано</h1>
 }
@@ -258,7 +258,7 @@ else
         Customer? customer = customers.FirstOrDefault(e => e.CustomerName == newReceiptData.CustomerName);
         newReceipt = new Receipt()
             {
-                SellerId = currentEmployee.EmployeeId,
+                SellerId = currentEmployee.EmployeeId ?? 0,
                 CustomerId = customer.CustomerId,
                 PurchaseSum = 0,
                 PurchaseDate = DateTime.Now,
@@ -317,7 +317,7 @@ else
         var newL = newReceipt.Items.ToList();
         newL.Remove(item);
         newReceipt.Items = newL;
-        newProductData.ProductName = stock.FirstOrDefault(e=>e.StationeryProductId==item.StockProductId).StationeryProduct.Name;
+        newProductData.ProductName = stock.FirstOrDefault(e=>e.StockProductId==item.StockProductId).StationeryProduct.Name;
         newProductData.Quantity = item.SellQuantity;
     }
     private void DeleteProduct(StationerySale item)

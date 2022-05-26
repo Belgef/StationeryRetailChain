@@ -13,7 +13,7 @@
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else if (!(currentEmployee.Job.JobName.ToLower().Contains("supply")))
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("supply")|| currentEmployee.Job.JobName.ToLower().Contains("admin")))
 {
     <h1 class="display-6 text-center">Доступ заблоковано</h1>
 }
@@ -38,6 +38,10 @@ else
             @if (action != Action.InfoStock)
             {
                 <button class="btn btn-primary" @onclick="()=>action=Action.InfoStock">Склад</button>
+            }
+            @if (action != Action.Suppliers)
+            {
+                <button class="btn btn-primary" @onclick="()=>action=Action.Suppliers">Постачальники</button>
             }
         </div>
     </div>
@@ -210,11 +214,14 @@ else
                 </table>
             }
             break;
+        case Action.Suppliers:
+            <SupplierManager />
+            break;
     }
 }
 
 @code {
-    private enum Action { History, Details, Create, InfoStock }
+    private enum Action { History, Details, Create, InfoStock, Suppliers }
     private Action action = Action.History;
 
     private Employee? currentEmployee;
@@ -293,7 +300,7 @@ else
         newInvoice = new ShipmentInvoice()
             {
                 SupplierId = newInvoiceData.SupplierId,
-                AuthorId = currentEmployee.EmployeeId,
+                AuthorId = currentEmployee.EmployeeId ?? 0,
                 CreationDate = DateTime.Now,
                 TotalSum = 0,
                 ShipmentSupplies = new ShipmentSupply[] { }

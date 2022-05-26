@@ -113,8 +113,6 @@ namespace StationeryRetailChain.Server.Controllers
                 item.ShipmentInvoiceId = tempShipmentInvoice.ShipmentInvoiceId;
                 _context.ShipmentSupplies.Add(item);
             }
-            _context.StationerySupplies.AsNoTracking()
-                ;
             await _context.SaveChangesAsync();
             return CreatedAtAction("GetShipmentInvoice", new { id = tempShipmentInvoice.ShipmentInvoiceId }, shipmentInvoice);
         }
