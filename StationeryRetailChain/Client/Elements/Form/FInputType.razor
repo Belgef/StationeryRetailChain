@@ -25,8 +25,8 @@ else
     </div>
     <div class="mb-3">
         <label class="form-label" style="position:relative; top:-0.1em">Підкатегорія:</label>
-        <RadzenAutoComplete Data=@subcategories.Where(s=>s.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId) TextProperty="SubcategoryName" @bind-Value="SubcategoryName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!categories.Any(e=>e.CategoryName==CategoryName)) />
-        @if(SubcategoryName != null && SubcategoryName != "" && !subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId))
+        <RadzenAutoComplete Data=@subcategories.Where(s=>s.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId) TextProperty="SubcategoryName" @bind-Value="SubcategoryName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!categories.Any(e=>e.CategoryName==CategoryName)) />
+        @if(SubcategoryName != null && SubcategoryName != "" && !subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId))
         {
             <div class="alert alert-primary d-flex align-items-center" role="alert">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
@@ -40,8 +40,8 @@ else
     </div>
     <div class="mb-3">
         <label class="form-label" style="position:relative; top:-0.1em">Тип:</label>
-        <RadzenAutoComplete Data=@types.Where(c=>c.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId) TextProperty="TypeName" @bind-Value="TypeName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId)) />
-        @if(TypeName != null && TypeName != "" && !types.Any(e=>e.TypeName==TypeName && e.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId))
+        <RadzenAutoComplete Data=@types.Where(c=>c.SubcategoryId==subcategories.FirstOrDefault(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId) TextProperty="TypeName" @bind-Value="TypeName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled=@(!subcategories.Any(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId)) />
+        @if(TypeName != null && TypeName != "" && !types.Any(e=>e.TypeName==TypeName && e.SubcategoryId==subcategories.FirstOrDefault(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId))
         {
             <div class="alert alert-primary d-flex align-items-center" role="alert">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
@@ -69,7 +69,7 @@ else
             _value = value;
             if(types?.Any(c=>c.TypeId==value)??false)
             {
-                Type type = types.First(c => c.TypeId == value);
+                Type type = types.FirstOrDefault(c => c.TypeId == value);
                 CategoryName=type.Subcategory.Category.CategoryName;
                 SubcategoryName = type.Subcategory.SubcategoryName;
                 TypeName = type.TypeName;
@@ -101,9 +101,9 @@ else
         set
         {
             _typeName = value;
-            if(value != null && value != "" && types!=null&&subcategories!=null&&categories!=null&& types.Any(e=>e.TypeName==value && e.SubcategoryId==subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId))
+            if(value != null && value != "" && types!=null&&subcategories!=null&&categories!=null&& types.Any(e=>e.TypeName==value && e.SubcategoryId==subcategories.FirstOrDefault(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId))
             {
-                Value = types.First(e => e.TypeName == value && e.SubcategoryId == subcategories.First(e => e.SubcategoryName == SubcategoryName && e.CategoryId == categories.First(e => e.CategoryName == CategoryName).CategoryId).SubcategoryId).TypeId??-1;
+                Value = types.FirstOrDefault(e => e.TypeName == value && e.SubcategoryId == subcategories.FirstOrDefault(e => e.SubcategoryName == SubcategoryName && e.CategoryId == categories.FirstOrDefault(e => e.CategoryName == CategoryName).CategoryId).SubcategoryId).TypeId??-1;
             }
         }
     }
@@ -118,7 +118,7 @@ else
             categories = await Http.GetFromJsonAsync<Category[]>("api/categories");
             if(types?.Any(c=>c.TypeId==Value)??false)
             {
-                Type type = types.First(c => c.TypeId == Value);
+                Type type = types.FirstOrDefault(c => c.TypeId == Value);
                 CategoryName = type.Subcategory.Category.CategoryName;
                 SubcategoryName = type.Subcategory.SubcategoryName;
                 TypeName = type.TypeName;
@@ -143,7 +143,7 @@ else
     }
     private async void AddSubcategory()
     {
-        var result = await Http.PostAsJsonAsync("api/subcategories", new Subcategory() { SubcategoryName=SubcategoryName, CategoryId=categories.First(e=>e.CategoryName==CategoryName).CategoryId??0 });
+        var result = await Http.PostAsJsonAsync("api/subcategories", new Subcategory() { SubcategoryName=SubcategoryName, CategoryId=categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId??0 });
         if(result.IsSuccessStatusCode)
         {
             await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Підкатегорію додано" });
@@ -155,7 +155,7 @@ else
     }
     private async void AddType()
     {
-        var result = await Http.PostAsJsonAsync("api/types", new Type() { TypeName=TypeName, SubcategoryId=subcategories.First(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.First(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId??0 });
+        var result = await Http.PostAsJsonAsync("api/types", new Type() { TypeName=TypeName, SubcategoryId=subcategories.FirstOrDefault(e=>e.SubcategoryName==SubcategoryName && e.CategoryId==categories.FirstOrDefault(e=>e.CategoryName==CategoryName).CategoryId).SubcategoryId??0 });
         if(result.IsSuccessStatusCode)
         {
             await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Тип додано" });

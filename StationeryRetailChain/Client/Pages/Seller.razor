@@ -144,7 +144,8 @@ else
                     <ValidationMessage For="() => newProductData" />
                     <div class="mb-3">
                         <label class="form-label">Товар</label>
-                        <RadzenAutoComplete Data=@stock.Select(e=>e.StationeryProduct) TextProperty="Name" Placeholder="Оберіть товар..." @bind-Value="newProductData.ProductName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                        <FSelectType @bind-Value="TypeId" />
+                        <RadzenAutoComplete Data=@stock.Select(e=>e.StationeryProduct).Where(e=>e.TypeId==TypeId || TypeId==-1) TextProperty="Name" Placeholder="Оберіть товар..." @bind-Value="newProductData.ProductName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                         <ValidationMessage For="() => newProductData.ProductName" />
                     </div>
                     <div class="mb-3">
@@ -197,6 +198,7 @@ else
     private Customer[]? customers;
     private StockProduct[]? stock;
 
+    private int TypeId { get; set; } = -1;
     //ReceiptDetails
     private Receipt? currentReceipt;
 
@@ -216,7 +218,7 @@ else
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
-        if (currentEmployee.Job.JobName.ToLower().Contains("seller"))
+        if (currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEmployee.Job.JobName.ToLower().Contains("admin"))
             await LoadDataAsync();
     }
     public async Task LoadDataAsync()
@@ -296,6 +298,7 @@ else
         productMessageStore?.Clear();
         newProductData.ProductName = "";
         newProductData.Quantity = 0;
+        TypeId = -1;
     }
     private async void SaveReceipt()
     {
@@ -319,6 +322,7 @@ else
         newReceipt.Items = newL;
         newProductData.ProductName = stock.FirstOrDefault(e=>e.StockProductId==item.StockProductId).StationeryProduct.Name;
         newProductData.Quantity = item.SellQuantity;
+        TypeId = stock.FirstOrDefault(e => e.StockProductId == item.StockProductId).StationeryProduct.TypeId;
     }
     private void DeleteProduct(StationerySale item)
     {

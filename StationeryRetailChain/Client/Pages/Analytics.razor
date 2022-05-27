@@ -1,0 +1,90 @@
+﻿@page "/anal"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using System.ComponentModel.DataAnnotations;
+@using StationeryRetailChain.Client.Elements;
+@using StationeryRetailChain.Client.Elements.Form;
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (currentEmployee == null)
+{
+    <div class="spinner-border text-dark" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (!(currentEmployee.Job.JobName.ToLower().Contains("admin")))
+{
+    <h1 class="display-6 text-center">Доступ заблоковано</h1>
+}
+else
+{
+    <h1 class="display-6 text-center">Аналітика</h1>
+    <div class="card">
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="()=>action=Action.StockCharts">Товари на складах</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Money">Загальні прибутки по відділеннях</button>
+        </div>
+    </div>
+    @switch (action)
+    {
+        case Action.StockCharts:
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-12 my-5">
+                        <RadzenChart>
+                            @foreach(var shop in shops)
+                            {
+                                <RadzenLineSeries Data="@products.Select(p=>new{X=Array.IndexOf(products, p)+1, Y = stockProducts.FirstOrDefault(e=>e.ShopId==shop.ShopId && e.StationeryProductId==p.StationeryProductId)?.Quantity??0})" CategoryProperty="X" Title="@($"{shop.StreetAddress}, {shop.City?.CityName}, {shop.City?.State?.StateName}, {shop.City?.State?.Country?.CountryName}")" LineType="LineType.Solid" ValueProperty="Y">
+                                    <RadzenMarkers MarkerType="MarkerType.Auto" />
+                                </RadzenLineSeries>
+                            }
+                            <RadzenCategoryAxis Padding="20" Step=1 />
+                            <RadzenValueAxis>
+                                <RadzenGridLines Visible="true" />
+                                <RadzenAxisTitle Text="Товари на складі по відділеннях" />
+                            </RadzenValueAxis>
+                        </RadzenChart>
+                        @for(int i = 1; i <= products.Length; i++)
+                        {
+                            <p>@(i). @(products[i-1].Name)</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            break;
+        case Action.Money:
+            <div class="container">
+                    <div class="row">
+                        <div class="col-sm-12 col-lg-6 offset-lg-3 my-5">
+                        <RadzenChart>
+                            <RadzenPieSeries Data="@receipts.GroupBy(e=>e.Seller.ShopId).Select(e=>new{X=$"{shops.FirstOrDefault(s=>s.ShopId==e.Key).StreetAddress}, {shops.FirstOrDefault(s=>s.ShopId==e.Key).City?.CityName}, {shops.FirstOrDefault(s=>s.ShopId==e.Key).City?.State?.StateName}, {shops.FirstOrDefault(s=>s.ShopId==e.Key).City?.State?.Country?.CountryName}",Y=e.Sum(e2=>e2.PurchaseSum)})" Title="Прибутки" CategoryProperty="X" ValueProperty="Y" />
+                        </RadzenChart>
+                    </div>
+                </div>
+            </div>
+            break;
+    }
+}
+
+@code {
+    private enum Action { StockCharts, Money }
+    private Action action = Action.StockCharts;
+
+    private Employee? currentEmployee;
+    private StationeryShop[]? shops;
+    private StockProduct[]? stockProducts;
+    private StationeryProduct[]? products;
+    private Receipt[]? receipts;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
+        shops = await Http.GetFromJsonAsync<StationeryShop[]>("api/stationeryshops");
+        stockProducts = await Http.GetFromJsonAsync<StockProduct[]>("api/stockproducts");
+        products = await Http.GetFromJsonAsync<StationeryProduct[]>("api/stationeryproducts");
+        receipts = await Http.GetFromJsonAsync<Receipt[]>("api/receipts");
+    }
+}

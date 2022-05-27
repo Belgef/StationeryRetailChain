@@ -1,0 +1,73 @@
+﻿@using Type = StationeryRetailChain.Shared.Models.Type
+
+@if(types==null || subcategories==null || categories==null)
+{
+    <div class="spinner-grow text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <FInputFK Name="Категорія" @bind-Value="CategoryId" Options=@(categories.ToDictionary(e=>e.CategoryId??0,e=>e.CategoryName)) />
+    <FInputFK Name="Підкатегорія" @bind-Value="SubcategoryId" Options=@(subcategories.Where(e=>e.CategoryId==CategoryId).ToDictionary(e=>e.SubcategoryId??0,e=>e.SubcategoryName)) Disabled=@(!categories.Any(e=>e.CategoryId==CategoryId)) />
+    <FInputFK Name="Тип" @bind-Value="Value" Options=@(types.Where(e=>e.SubcategoryId==SubcategoryId).ToDictionary(e=>e.TypeId??0,e=>e.TypeName)) Disabled=@(!subcategories.Any(e=>e.SubcategoryId==SubcategoryId && e.CategoryId==CategoryId)) />
+}
+
+@code {
+    [Parameter]
+    public int Value
+    {
+        get => _value;
+        set
+        {
+            if (_value == value) return;
+            _value = value;
+            if(types?.Any(c=>c.TypeId==value)??false)
+            {
+                Type type = types.FirstOrDefault(c => c.TypeId == value);
+                CategoryId=type.Subcategory.CategoryId;
+                SubcategoryId = type.SubcategoryId;
+            }
+            else
+            {
+                CategoryId=-1;
+                SubcategoryId = -1;
+            }
+
+            ValueChanged.InvokeAsync(value);
+        }
+    }
+    private int _value;
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+    [Parameter]
+    public Expression<Func<int>> ValueExpression { get; set; }
+
+    private Type[]? types;
+    private Subcategory[]? subcategories;
+    private Category[]? categories;
+
+    private int CategoryId { get; set; }
+    private int SubcategoryId { get; set; }
+    private string _typeName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            types = await Http.GetFromJsonAsync<Type[]>("api/types");
+            subcategories = await Http.GetFromJsonAsync<Subcategory[]>("api/subcategories");
+            categories = await Http.GetFromJsonAsync<Category[]>("api/categories");
+            if(types?.Any(c=>c.TypeId==Value)??false)
+            {
+                Type type = types.FirstOrDefault(c => c.TypeId == Value);
+                CategoryId=type.Subcategory.CategoryId;
+                SubcategoryId = type.SubcategoryId;
+            }
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+}

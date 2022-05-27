@@ -33,7 +33,7 @@ namespace StationeryRetailChain.Server.Controllers
                 Employee? emp = _context.Employees.Where(x => x.EmployeeId == employeeId).Include(e => e.Job).FirstOrDefault();
                 if(emp == null)
                     return NotFound();
-                if (!emp.Job.JobName.ToLower().Contains("seller"))
+                if (!(emp.Job.JobName.ToLower().Contains("seller") || emp.Job.JobName.ToLower().Contains("admin")))
                     return Forbid();
                 return await _context.Receipts.Where(e => e.SellerId == employeeId)
                 .Include(e => e.Customer).Include(e => e.Items).ThenInclude(e => e.StockProduct)
@@ -41,7 +41,8 @@ namespace StationeryRetailChain.Server.Controllers
                 .ThenInclude(e=>e.City).ThenInclude(e=>e.State).ThenInclude(e=>e.Country).ToListAsync();
             }
             else
-                return await _context.Receipts.Include(e => e.Customer).ToListAsync();
+                return await _context.Receipts.Include(e => e.Customer).Include(e => e.Seller).ThenInclude(e => e.Shop)
+                .ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country).ToListAsync();
         }
 
         // GET: api/Receipts/5
