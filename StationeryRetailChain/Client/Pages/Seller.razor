@@ -143,8 +143,8 @@ else
                 <EditForm EditContext="productEditContext" OnValidSubmit="@HandleProductValidSubmit">
                     <ValidationMessage For="() => newProductData" />
                     <div class="mb-3">
-                        <label class="form-label">Товар</label>
                         <FSelectType @bind-Value="TypeId" />
+                        <label class="form-label">Товар</label>
                         <RadzenAutoComplete Data=@stock.Select(e=>e.StationeryProduct).Where(e=>e.TypeId==TypeId || TypeId==-1) TextProperty="Name" Placeholder="Оберіть товар..." @bind-Value="newProductData.ProductName" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                         <ValidationMessage For="() => newProductData.ProductName" />
                     </div>
@@ -162,7 +162,18 @@ else
             }
             break;
         case Action.InfoStock:
-            <p class="h4 m-4">Товари на складі</p>
+            <div><p class="h4 m-4">Товари на складі</p>
+            <input type="text" @oninput="@((v)=>SearchStock=v.Value.ToString())" placeholder="Шукати за назвою" />
+            <select @onchange="@((v)=>FilterStock=int.Parse(v.Value.ToString()))">
+                <option value=0>Фільтр за типом...</option>
+                @if(types != null)
+                {
+                    @foreach (var type in types)
+                    {
+                        <option value=@type.TypeId>@($"{type.Subcategory.Category.CategoryName} / {type.Subcategory.SubcategoryName} / {type.TypeName}")</option>
+                    }
+                }
+            </select></div>
             @if (stock != null)
             {
                 <table class="table table-hover">
@@ -174,7 +185,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var prod in stock.OrderBy(e => e.StationeryProduct.Name))
+                        @foreach (var prod in stock.Where(e=>e.StationeryProduct.Name.ToLower().Contains(SearchStock.ToLower()) && (FilterStock==0 || e.StationeryProduct.TypeId==FilterStock)).OrderBy(e => e.StationeryProduct.Name))
                         {
                             <tr>
                                 <td>@prod.StationeryProduct.Name</td>
@@ -197,8 +208,11 @@ else
     private Receipt[]? receipts;
     private Customer[]? customers;
     private StockProduct[]? stock;
+    private StationeryRetailChain.Shared.Models.Type[]? types;
     
     private string Search { get; set; } = "";
+    private string SearchStock { get; set; } = "";
+    private int FilterStock { get; set; }
 
     private int TypeId { get; set; } = -1;
     //ReceiptDetails
@@ -230,6 +244,7 @@ else
             receipts = await Http.GetFromJsonAsync<Receipt[]>("api/receipts?employeeId=" + currentEmployee?.EmployeeId);
             customers = await Http.GetFromJsonAsync<Customer[]>("api/customers");
             stock = await Http.GetFromJsonAsync<StockProduct[]>("api/stockproducts?shopId=" + currentEmployee.ShopId);
+            types = await Http.GetFromJsonAsync<StationeryRetailChain.Shared.Models.Type[]>("api/types");
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -263,7 +278,7 @@ else
         newReceipt = new Receipt()
             {
                 SellerId = currentEmployee.EmployeeId ?? 0,
-                CustomerId = customer.CustomerId,
+                CustomerId = customer.CustomerId ?? -1,
                 PurchaseSum = 0,
                 PurchaseDate = DateTime.Now,
                 Items = new StationerySale[] { }
@@ -278,7 +293,7 @@ else
             productMessageStore?.Add(() => newProductData, "Досягнуто максимальної кількості товарів - 20");
 
         if (id==null)
-            productMessageStore?.Add(() => newProductData.ProductName, "Будь ласка, оберіть товар");
+            productMessageStore?.Add(() => newProductData.ProductName, "Будь ласка, оберіть існуючий товар");
         else if (newReceipt.Items.Any(e => e.StockProductId == id))
             productMessageStore?.Add(() => newProductData.ProductName, "Даний товар уже додано");
         else if (newProductData.Quantity <= 0)

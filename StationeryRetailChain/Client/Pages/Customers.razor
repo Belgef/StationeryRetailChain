@@ -17,7 +17,7 @@ else
     <h1 class="display-6 text-center me-auto">База клієнтів</h1>
     <div class="card">
         <div class="card-body">
-            <button class="btn btn-primary" @onclick="()=>{newItem=null;action=Action.Add;}">Додати клієнта</button>
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати клієнта</button>
             @if (action != Action.All)
             {
                 <button class="btn btn-primary" @onclick="()=>action=Action.All">Список клієнтів</button>
@@ -108,7 +108,6 @@ else
         public string? CustomerName { get; set; }
         [Required]
         [RegularExpression(@"\d{10}", ErrorMessage = "Телефон у невірному форматі.")]
-        [StringLength(10, MinimumLength = 10, ErrorMessage = "Телефон у невірному форматі.")]
         public string? PhoneNumber { get; set; }
         [Required]
         [StringLength(255, MinimumLength = 5, ErrorMessage = "Адреса має мати розмір від {2} до {1} символів.")]
@@ -144,7 +143,15 @@ else
         currentItem = item;
         action = Action.Details;
     }
-
+    
+    private void ClearForm()
+    {
+        newData.CustomerId = -1;
+        newData.CustomerName = "";
+        newData.PhoneNumber = "";
+        newData.CityId = -1;
+        newData.StreetAddress = "";
+    }
     protected override void OnInitialized()
     {
         editContext = new(newData);
@@ -161,6 +168,7 @@ else
     {
         newItem = new Customer()
             {
+                CustomerId = (newData.CustomerId > 0?newData.CustomerId:null),
                 CustomerName = newData.CustomerName,
                 CustomerPhoneNumber = newData.PhoneNumber,
                 StreetAddress = newData.StreetAddress,
@@ -194,7 +202,7 @@ else
     }
     private void Edit(Customer item)
     {
-        newData.CustomerId = item.CustomerId;
+        newData.CustomerId = item.CustomerId ?? -1;
         newData.CustomerName = item.CustomerName;
         newData.PhoneNumber = item.CustomerPhoneNumber;
         newData.StreetAddress = item.StreetAddress;

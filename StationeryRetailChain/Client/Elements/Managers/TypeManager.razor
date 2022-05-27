@@ -1,25 +1,26 @@
-﻿@switch (action)
+﻿@using Type = StationeryRetailChain.Shared.Models.Type
+@switch (action)
 {
     case Action.All:
-        <p class="h4 m-4">Список кольорів</p>
+        <p class="h4 m-4">Список типів</p>
         @if (items != null)
         {
-            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати колір</button>
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати тип</button>
             <table class="table table-hover">
                 <thead>
                     <tr>
                         <th scope="col">Назва</th>
-                        <th scope="col">Код</th>
+                        <th scope="col">Підкатегорія</th>
                         <th scope="col"></th>
                         <th scope="col"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in items.OrderBy(c => c.ColorName))
+                    @foreach (var item in items.OrderBy(c => c.TypeName))
                     {
                         <tr>
-                            <td>@item.ColorName</td>
-                            <td>@item.ColorHex</td>
+                            <td>@item.TypeName</td>
+                            <td>@item.Subcategory?.SubcategoryName</td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
                         </tr>
@@ -30,14 +31,14 @@
         break;
     case Action.Add:
     case Action.Edit:
-        <p class="h4 m-4">@((action==Action.Add)?"Додати колір":"Редагувати колір")</p>
+        <p class="h4 m-4">@((action==Action.Add)?"Додати тип":"Редагувати тип")</p>
         <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
             <FInputString Name="Назва" @bind-Value="newData.Name" />
-            <FInputString Name="Код" @bind-Value="newData.ColorHex" />
+            <FInputFK Name="Підатегорія" @bind-Value="newData.SubcategoryId" Options=@(subcategories.ToDictionary(e=>e.SubcategoryId??-1,e=>e.SubcategoryName)) />
             <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
         </EditForm>
-        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список кольорів</button>
+        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список типів</button>
         break;
 }
 
@@ -46,24 +47,24 @@
     private enum Action { All, Add, Edit }
     private Action action = Action.All;
 
-    private const string Path = "api/colors";
+    private const string Path = "api/types";
 
-    private Color[]? items;
+    private Type[]? items;
+    private Subcategory[]? subcategories;
 
     //Create
     private EditContext? editContext;
     private class InputData
     {
-        public int ColorId { get; set; } = 0;
+        public int Id { get; set; } = 0;
         [Required]
         [StringLength(20, MinimumLength = 2, ErrorMessage = "Назва має мати розмір від {2} до {1} символів.")]
         public string Name { get; set; } = "";
         [Required]
-        [RegularExpression(@"[0-9a-f]{6}", ErrorMessage = "Код у невірному форматі.")]
-        public string ColorHex { get; set; } = "ffffff";
+        public int SubcategoryId { get; set; }
     }
     private InputData newData = new();
-    private Color? newItem;
+    private Type? newItem;
     private ValidationMessageStore? messageStore;
 
     protected override async Task OnInitializedAsync()
@@ -74,7 +75,8 @@
     {
         try
         {
-            items = await Http.GetFromJsonAsync<Color[]>(Path);
+            items = await Http.GetFromJsonAsync<Type[]>(Path);
+            subcategories = await Http.GetFromJsonAsync<Subcategory[]>("api/subcategories");
         }
         catch (AccessTokenNotAvailableException exception)
         {
@@ -89,10 +91,10 @@
     }
     private async void HandleValidSubmit()
     {
-        newItem = new Color()
+        newItem = new Type()
             {
-                ColorHex = newData.ColorHex,
-                ColorName = newData.Name
+                SubcategoryId = newData.SubcategoryId,
+                TypeName = newData.Name
             };
         messageStore?.Clear();
 
@@ -101,12 +103,12 @@
             result = await Http.PostAsJsonAsync(Path, newItem);
         else
         {
-            newItem.ColorId = newData.ColorId;
-            result = await Http.PutAsJsonAsync(Path+"/" + newData.ColorId, newItem);
+            newItem.TypeId = newData.Id;
+            result = await Http.PutAsJsonAsync(Path+"/" + newData.Id, newItem);
         }
         if (result.IsSuccessStatusCode)
         {
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Колір додано" : "Колір редаговано" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Тип додано" : "Тип редаговано" });
             ClearForm();
             newItem = null;
             action = Action.All;
@@ -118,28 +120,28 @@
     }
     private void ClearForm()
     {
-        newData.ColorHex = "";
-        newData.ColorId = -1;
+        newData.SubcategoryId = 0;
+        newData.Id = -1;
         newData.Name = "";
     }
-    private void Edit(Color item)
+    private void Edit(Type item)
     {
-        newData.ColorHex = item.ColorHex;
-        newData.ColorId = item.ColorId ?? 0;
-        newData.Name = item.ColorName ?? "";
+        newData.SubcategoryId = item.SubcategoryId;
+        newData.Id = item.TypeId ?? 0;
+        newData.Name = item.TypeName ?? "";
         action = Action.Edit;
     }
-    private async void Delete(Color item)
+    private async void Delete(Type item)
     {
-        var result = await Http.DeleteAsync(Path+"/" + item.ColorId);
+        var result = await Http.DeleteAsync(Path+"/" + item.TypeId);
         if (result.IsSuccessStatusCode)
         {
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Колір видалено" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Тип видалено" });
             await LoadDataAsync();
             action = Action.All;
             this.StateHasChanged();
         }
         else
-            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цей колір" });
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цей тип" });
     }
 }

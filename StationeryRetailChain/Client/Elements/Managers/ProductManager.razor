@@ -1,7 +1,20 @@
 ﻿@switch (action)
 {
     case Action.All:
-        <p class="h4 m-4">Список товарів</p>
+        <div>
+            <p class="h4 m-4">Список товарів</p>
+            <input type="text" @oninput="@((v)=>SearchStock=v.Value.ToString())" placeholder="Шукати за назвою" />
+            <select @onchange="@((v)=>FilterStock=int.Parse(v.Value.ToString()))">
+                <option value=0>Фільтр за типом...</option>
+                @if(types != null)
+                {
+                    @foreach (var type in types)
+                    {
+                        <option value=@type.TypeId>@($"{type.Subcategory.Category.CategoryName} / {type.Subcategory.SubcategoryName} / {type.TypeName}")</option>
+                    }
+                }
+            </select>
+        </div>
         @if (products != null)
         {
             <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати товар</button>
@@ -16,12 +29,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in products.OrderBy(c => c.Name))
+                    @foreach (var item in products.Where(e=>e.Name.ToLower().Contains(SearchStock.ToLower()) && (FilterStock==0 || e.TypeId==FilterStock)).OrderBy(c => c.Name))
                     {
-                        <tr style="cursor:pointer;" @onclick="()=>GetItem(item.StationeryProductId)">
-                            <td>@item.Name</td>
-                            <td>@item.BarCode</td>
-                            <td>@item.Price</td>
+                        <tr>
+                            <td style="cursor:pointer;" @onclick="()=>GetItem(item.StationeryProductId)">@item.Name</td>
+                            <td style="cursor:pointer;" @onclick="()=>GetItem(item.StationeryProductId)">@item.BarCode</td>
+                            <td style="cursor:pointer;" @onclick="()=>GetItem(item.StationeryProductId)">@item.Price</td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
                             <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
                         </tr>
@@ -86,7 +99,9 @@
     private Manufacturer[]? manufacturers;
     private Color[]? colors;
     private StationeryRetailChain.Shared.Models.Type[]? types;
-
+    
+    private string SearchStock { get; set; } = "";
+    private int FilterStock { get; set; }
     //Details
     private StationeryProduct? currentItem;
 

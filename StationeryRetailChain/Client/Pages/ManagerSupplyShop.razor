@@ -162,7 +162,7 @@ else
                     <div class="mb-3">
                         <label class="form-label">Товар</label>
                         <InputSelect @bind-Value="newProductData.ProductId">
-                            @foreach (var prod in CurrentShipmentInvoice.ShipmentSupplies@*products.Where(e=>!newInvoice.StationerySupplies.Any(e2=>e2.StockProduct.StationeryProductId==e.StationeryProductId))*@)
+                            @foreach (var prod in CurrentShipmentInvoice.ShipmentSupplies.Where(e=>!newInvoice.StationerySupplies.Any(s=>stock.FirstOrDefault(s2=>s2.StockProductId==s.StockProductId)?.StationeryProductId == e.StationeryProductId))@*products.Where(e=>!newInvoice.StationerySupplies.Any(e2=>e2.StockProduct.StationeryProductId==e.StationeryProductId))*@)
                             {
                                 <option value=@prod.StationeryProductId>@($"{prod.StationeryProduct.Name}(залишилось {prod.Quantity-allInvoices.Where(i => i.ShipmentInvoiceId == newInvoiceData.ShipmentInvoiceId).SelectMany(e => e.StationerySupplies).Where(e => e.StockProduct.StationeryProductId==prod.StationeryProductId).Sum(e=>e.Quantity)} шт.)")</option>
                             }
@@ -183,7 +183,18 @@ else
             }
             break;
         case Action.InfoStock:
-            <p class="h4 m-4">Товари на складі</p>
+            <div><p class="h4 m-4">Товари на складі</p>
+            <input type="text" @oninput="@((v)=>SearchStock=v.Value.ToString())" placeholder="Шукати за назвою" />
+            <select @onchange="@((v)=>FilterStock=int.Parse(v.Value.ToString()))">
+                <option value=0>Фільтр за типом...</option>
+                @if(types != null)
+                {
+                    @foreach (var type in types)
+                    {
+                        <option value=@type.TypeId>@($"{type.Subcategory.Category.CategoryName} / {type.Subcategory.SubcategoryName} / {type.TypeName}")</option>
+                    }
+                }
+            </select></div>
             @if (stock != null)
             {
                 <table class="table table-hover">
@@ -195,7 +206,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var prod in stock.OrderBy(e => e.StationeryProduct.Name))
+                        @foreach (var prod in stock.Where(e=>e.StationeryProduct.Name.ToLower().Contains(SearchStock.ToLower()) && (FilterStock==0 || e.StationeryProduct.TypeId==FilterStock)).OrderBy(e => e.StationeryProduct.Name))
                         {
                             <tr>
                                 <td>@prod.StationeryProduct.Name</td>
@@ -220,6 +231,7 @@ else
     private ShipmentInvoice[]? mainInvoices;
     private StockProduct[]? stock;
     private StationeryProduct[]? products;
+    private StationeryRetailChain.Shared.Models.Type[]? types;
 
     //ReceiptDetails
     private DeliveryInvoice? currentInvoice;
@@ -231,6 +243,9 @@ else
     private DeliveryInvoice? newInvoice;
     private ValidationMessageStore? invoiceMessageStore;
     private Dictionary<int, int>? leftQuantities;
+    
+    private string SearchStock { get; set; } = "";
+    private int FilterStock { get; set; }
 
     private EditContext? productEditContext;
     private class ProductData { 
@@ -246,7 +261,7 @@ else
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
-        if (currentEmployee.Job.JobName.ToLower().Contains("supply"))
+        if (currentEmployee.Job.JobName.ToLower().Contains("supply")||currentEmployee.Job.JobName.ToLower().Contains("admin"))
             await LoadDataAsync();
     }
     public async Task LoadDataAsync()
@@ -258,6 +273,7 @@ else
             mainInvoices = await Http.GetFromJsonAsync<ShipmentInvoice[]>("api/shipmentinvoices");
             stock = await Http.GetFromJsonAsync<StockProduct[]>("api/stockproducts?shopId=" + currentEmployee.ShopId);
             products = await Http.GetFromJsonAsync<StationeryProduct[]>("api/stationeryproducts");
+            types = await Http.GetFromJsonAsync<StationeryRetailChain.Shared.Models.Type[]>("api/types");
         }
         catch (AccessTokenNotAvailableException exception)
         {

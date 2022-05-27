@@ -1,7 +1,7 @@
 ﻿@switch (action)
 {
     case Action.All:
-        <p class="h4 m-4">Список працівників</p>
+            <div><p class="h4 m-4">Список працівників</p><input type="text" @oninput="@((v)=>Search=v.Value.ToString())" placeholder="Шукати за користувачем" /></div>
         @if (items != null)
         {
             <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати працівника</button>
@@ -19,7 +19,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in items.OrderBy(c => c.EmployeeName))
+                    @foreach (var item in items.Where(e=>e.EmployeeName.ToLower().StartsWith(Search.ToLower())).OrderBy(c => c.EmployeeName))
                     {
                         <tr>
                             <td>@item.EmployeeName</td>
@@ -63,7 +63,8 @@
     private StationeryShop[]? shops;
     private Job[]? jobs;
     private User[]? users;
-
+    
+    private string Search { get; set; } = "";
     //Create
     private EditContext? editContext;
     private class InputData
@@ -120,7 +121,6 @@
     {
         newItem = new Employee()
             {
-                EmployeeId = newData.Id,
                 EmployeeName = newData.Name,
                 EmployeePhoneNumber = newData.Phone,
                 ShopId = newData.ShopId,

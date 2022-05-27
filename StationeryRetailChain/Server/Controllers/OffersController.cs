@@ -104,12 +104,15 @@ namespace StationeryRetailChain.Server.Controllers
             {
                 return NotFound();
             }
-            var offer = await _context.Offers.FindAsync(id);
+            var offer = await _context.Offers.Include(e=>e.Items).FirstOrDefaultAsync(e=>e.OfferId==id);
             if (offer == null)
             {
                 return NotFound();
             }
-
+            foreach(var n in offer.Items)
+            {
+                _context.OfferStationeries.Remove(n);
+            }
             _context.Offers.Remove(offer);
             await _context.SaveChangesAsync();
 

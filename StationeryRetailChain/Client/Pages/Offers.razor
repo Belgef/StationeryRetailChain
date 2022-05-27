@@ -34,16 +34,18 @@ else
                             <th scope="col">Початок дії</th>
                             <th scope="col">Кінець дії</th>
                             <th scope="col">Статус</th>
+                            <th scope="col"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var offer in offers.OrderByDescending(e => e.StartDate))
                         {
-                            <tr style="cursor:pointer;" @onclick="()=>GetOffer(offer.OfferId??0)">
-                                <td>@offer.OfferName</td>
-                                <td>@offer.StartDate</td>
-                                <td>@offer.EndDate</td>
-                                <td>@((offer.StartDate > DateTime.Now)?"Ще не почато":((offer.EndDate > DateTime.Now)?"Триває":"Завершено"))</td>
+                            <tr>
+                                <td style="cursor:pointer;" @onclick="()=>GetOffer(offer.OfferId??0)">@offer.OfferName</td>
+                                <td style="cursor:pointer;" @onclick="()=>GetOffer(offer.OfferId??0)">@offer.StartDate</td>
+                                <td style="cursor:pointer;" @onclick="()=>GetOffer(offer.OfferId??0)">@offer.EndDate</td>
+                                <td style="cursor:pointer;" @onclick="()=>GetOffer(offer.OfferId??0)">@((offer.StartDate > DateTime.Now)?"Ще не почато":((offer.EndDate > DateTime.Now)?"Триває":"Завершено"))</td>
+                                <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(offer)"><i class="fa-solid fa-eraser"></i></button></td>
                             </tr>
                         }
                     </tbody>
@@ -182,7 +184,7 @@ else
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
-        if (currentEmployee.Job.JobName.ToLower().Contains("product"))
+        if (currentEmployee.Job.JobName.ToLower().Contains("product")||currentEmployee.Job.JobName.ToLower().Contains("admin"))
             await LoadDataAsync();
     }
     public async Task LoadDataAsync()
@@ -267,5 +269,18 @@ else
         var newL = newOffer.Items.ToList();
         newL.Remove(item);
         newOffer.Items = newL;
+    }
+    private async void Delete(Offer item)
+    {
+        var result = await Http.DeleteAsync("api/offers/" + item.OfferId);
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Акцію видалено" });
+            await LoadDataAsync();
+            action = Action.Index;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити цього працівника" });
     }
 }

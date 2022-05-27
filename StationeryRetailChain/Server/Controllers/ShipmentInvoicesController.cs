@@ -34,8 +34,6 @@ namespace StationeryRetailChain.Server.Controllers
                 Employee? emp = _context.Employees.Where(x => x.EmployeeId == employeeId).Include(e => e.Job).FirstOrDefault();
                 if (emp == null)
                     return NotFound();
-                if (!emp.Job.JobName.ToLower().Contains("supply"))
-                    return Forbid();
                 return await _context.ShipmentInvoices.Where(e => e.AuthorId == employeeId)
                 .Include(e => e.Supplier).Include(e => e.ShipmentSupplies).ThenInclude(e => e.StationeryProduct)
                 .Include(e => e.Author).ThenInclude(e => e.Shop)
