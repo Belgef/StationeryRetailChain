@@ -14,7 +14,7 @@ else if (!(currentEmployee.Job.JobName.ToLower().Contains("seller") || currentEm
 }
 else
 {
-    <h1 class="display-6 text-center">База клієнтів</h1>
+    <h1 class="display-6 text-center me-auto">База клієнтів</h1>
     <div class="card">
         <div class="card-body">
             <button class="btn btn-primary" @onclick="()=>{newItem=null;action=Action.Add;}">Додати клієнта</button>
@@ -27,7 +27,7 @@ else
     @switch (action)
     {
         case Action.All:
-            <p class="h4 m-4">Список клієнтів</p>
+            <div><p class="h4 m-4">Список клієнтів</p><input type="text" @oninput="@((v)=>Search=v.Value.ToString())" placeholder="Шукати за назвою" /></div>
             @if (customers != null)
             {
                 <table class="table table-hover">
@@ -42,7 +42,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in customers.OrderBy(c=>c.CustomerName))
+                        @foreach (var item in customers.Where(c=>c.CustomerName.ToLower().StartsWith(Search.ToLower())).OrderBy(c=>c.CustomerName))
                         {
                             @*<tr style="cursor:pointer;" @onclick="()=>GetItem(item)">*@
                             <tr>
@@ -58,39 +58,6 @@ else
                 </table>
             }
             break;
-        @*case Action.Details:
-            <div class="card m-4">
-                <div class="card-header">
-                    Чек №@currentItem.ReceiptNumber
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">Ім'я покупця: @(currentReceipt.Customer?.CustomerName ?? "")</li>
-                    <li class="list-group-item">Сума покупки: @currentReceipt.PurchaseSum</li>
-                    <li class="list-group-item">Час покупки: @currentReceipt.PurchaseDate</li>
-                </ul>
-                <div class="card-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Товар</th>
-                                <th scope="col">Ціна</th>
-                                <th scope="col">Кількість</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in currentReceipt?.Items)
-                            {
-                                <tr>
-                                    <td>@item.StockProduct.StationeryProduct.Name</td>
-                                    <td>@item.SellPrice</td>
-                                    <td>@item.SellQuantity</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            break;*@
         case Action.Add:
         case Action.Edit:
             <p class="h4 m-4">@((action==Action.Add)?"Додати клієнта":"Редагувати клієнта")</p>
@@ -126,6 +93,7 @@ else
     private Customer[]? customers;
     private City[]? cities;
 
+    private string Search { get; set; } = "";
     //ReceiptDetails
     private Customer? currentItem;
 

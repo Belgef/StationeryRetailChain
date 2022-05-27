@@ -86,7 +86,7 @@
     }
 
     private Employee? currentEmployee;
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
         AuthenticationStateProvider.AuthenticationStateChanged += async (state) =>
         {
@@ -94,5 +94,8 @@
                 currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + state.Result.User.Identity.Name.Replace('_', ' '));
             StateHasChanged();
         };
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if(authState?.User?.Identity?.Name != null)
+            currentEmployee = await Http.GetFromJsonAsync<Employee>("api/employees/name/" + authState.User.Identity.Name.Replace('_', ' '));
     }
 }

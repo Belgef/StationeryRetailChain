@@ -39,7 +39,7 @@ else
     @switch (action)
     {
         case Action.History:
-            <p class="h4 m-4">Історія продажів</p>
+            <div><p class="h4 m-4">Історія продажів</p><input type="text" @oninput="@((v)=>Search=v.Value.ToString())" placeholder="Шукати за користувачем" /></div>
             @if (receipts != null)
             {
                 <table class="table table-hover">
@@ -53,7 +53,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var receipt in receipts.OrderByDescending(e => e.PurchaseDate))
+                        @foreach (var receipt in receipts.Where(e=>e.Customer.CustomerName.ToLower().StartsWith(Search.ToLower())).OrderByDescending(e => e.PurchaseDate))
                         {
                             <tr style="cursor:pointer;">
                                 <td @onclick="()=>GetReceipt(receipt)">@receipt.ReceiptNumber</td>
@@ -197,6 +197,8 @@ else
     private Receipt[]? receipts;
     private Customer[]? customers;
     private StockProduct[]? stock;
+    
+    private string Search { get; set; } = "";
 
     private int TypeId { get; set; } = -1;
     //ReceiptDetails
@@ -271,11 +273,11 @@ else
     private void HandleProductValidationRequested(object? sender, ValidationRequestedEventArgs args)
     {
         productMessageStore?.Clear();
-        int id = stock.FirstOrDefault(e => e.StationeryProduct.Name == newProductData.ProductName).StockProductId;
+        int? id = stock.FirstOrDefault(e => e.StationeryProduct.Name == newProductData.ProductName)?.StockProductId;
         if (newReceipt.Items.Count() >= 20)
             productMessageStore?.Add(() => newProductData, "Досягнуто максимальної кількості товарів - 20");
 
-        if (!stock.Select(e=>e.StationeryProduct.Name).Contains(newProductData.ProductName))
+        if (id==null)
             productMessageStore?.Add(() => newProductData.ProductName, "Будь ласка, оберіть товар");
         else if (newReceipt.Items.Any(e => e.StockProductId == id))
             productMessageStore?.Add(() => newProductData.ProductName, "Даний товар уже додано");
