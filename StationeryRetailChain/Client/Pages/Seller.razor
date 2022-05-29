@@ -39,7 +39,7 @@ else
     @switch (action)
     {
         case Action.History:
-            <div><p class="h4 m-4">Історія продажів</p><input type="text" @oninput="@((v)=>Search=v.Value.ToString())" placeholder="Шукати за користувачем" /></div>
+            <div><p class="h4 m-4">Історія продажів</p><input type="text" @oninput="@((v)=>{Search=v.Value.ToString(); PageNumber=1;})" placeholder="Шукати за користувачем" /></div>
             @if (receipts != null)
             {
                 <table class="table table-hover">
@@ -47,17 +47,25 @@ else
                         <tr>
                             <th scope="col">Номер чеку</th>
                             <th scope="col">Покупець</th>
+                            @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                            {
+                                <th scope="col">Продавець</th>
+                            }
                             <th scope="col">Сума покупки</th>
                             <th scope="col">Час покупки</th>
                             <th scope="col"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var receipt in receipts.Where(e=>e.Customer.CustomerName.ToLower().StartsWith(Search.ToLower())).OrderByDescending(e => e.PurchaseDate))
+                        @foreach (var receipt in receipts.Where(e=>e.Customer.CustomerName.ToLower().StartsWith(Search.ToLower())).OrderByDescending(e => e.PurchaseDate).Where((n,i)=>i>=(PageNumber-1)*20 && i<PageNumber*20))
                         {
                             <tr style="cursor:pointer;">
                                 <td @onclick="()=>GetReceipt(receipt)">@receipt.ReceiptNumber</td>
                                 <td @onclick="()=>GetReceipt(receipt)">@(receipt.Customer?.CustomerName ?? "")</td>
+                                @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                                {
+                                    <td @onclick="()=>GetReceipt(receipt)">@(receipt.Seller?.EmployeeName ?? "")</td>
+                                }
                                 <td @onclick="()=>GetReceipt(receipt)">@receipt.PurchaseSum</td>
                                 <td @onclick="()=>GetReceipt(receipt)">@receipt.PurchaseDate</td>
                                 <td><button type="button" class="btn btn-primary" @onclick="()=>DownloadPdf(receipt)"><i class="fa-solid fa-file-pdf"></i></button></td>
@@ -65,6 +73,22 @@ else
                         }
                     </tbody>
                 </table>
+                <nav aria-label="...">
+                    <ul class="pagination">
+                        @foreach(int i in Enumerable.Range(0, receipts.Where(e=>e.Customer.CustomerName.ToLower().StartsWith(Search.ToLower())).Count()/20))
+                        {
+                            @if(i+1==PageNumber)
+                            {
+                                <li class="page-item active" aria-current="page"><a class="page-link">@(i+1)</a></li>
+                            }
+                            else
+                            {
+                                <li class="page-item"><a class="page-link" @onclick="()=>PageNumber=i+1">@(i+1)</a></li>
+                            }
+                            
+                        }
+                    </ul>
+                </nav>
             }
             break;
         case Action.ReceiptDetails:
@@ -74,6 +98,10 @@ else
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">Ім'я покупця: @(currentReceipt.Customer?.CustomerName ?? "")</li>
+                    @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                    {
+                        <li class="list-group-item">Ім'я продавця: @(currentReceipt.Seller?.EmployeeName ?? "")</li>
+                    }
                     <li class="list-group-item">Сума покупки: @currentReceipt.PurchaseSum</li>
                     <li class="list-group-item">Час покупки: @currentReceipt.PurchaseDate</li>
                 </ul>
@@ -209,10 +237,11 @@ else
     private Customer[]? customers;
     private StockProduct[]? stock;
     private StationeryRetailChain.Shared.Models.Type[]? types;
-    
+
     private string Search { get; set; } = "";
     private string SearchStock { get; set; } = "";
     private int FilterStock { get; set; }
+    private int PageNumber = 1;
 
     private int TypeId { get; set; } = -1;
     //ReceiptDetails
@@ -251,10 +280,11 @@ else
             exception.Redirect();
         }
     }
-    public void GetReceipt(Receipt receipt)
+    public async void GetReceipt(Receipt receipt)
     {
-        currentReceipt = receipt;
+        currentReceipt = await Http.GetFromJsonAsync<Receipt>("api/receipts/" + receipt?.ReceiptId);
         action = Action.ReceiptDetails;
+        StateHasChanged();
     }
 
     protected override void OnInitialized()

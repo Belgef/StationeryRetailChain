@@ -52,6 +52,10 @@ else
                         <tr>
                             <th scope="col">Номер накладної на поставку у відділення</th>
                             <th scope="col">Номер головної накладної на поставку</th>
+                            @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                            {
+                                <th scope="col">Автор</th>
+                            }
                             <th scope="col">Сума поставки</th>
                             <th scope="col">Час створення</th>
                             <th scope="col"></th>
@@ -63,6 +67,10 @@ else
                             <tr style="cursor:pointer;">
                                 <td @onclick="()=>GetInvoice(item)">@item.DeliveryInvoiceNumber</td>
                                 <td @onclick="()=>GetInvoice(item)">@item.ShipmentInvoice.ShipmentInvoiceNumber</td>
+                                @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                                {
+                                    <td @onclick="()=>GetInvoice(item)">@(item.Author?.EmployeeName ?? "")</td>
+                                }
                                 <td @onclick="()=>GetInvoice(item)">@item.StationerySupplies.Sum(e=>e.Quantity*e.ShipmentSupply.Cost)</td>
                                 <td @onclick="()=>GetInvoice(item)">@item.CreationDate</td>
                                 <td><button type="button" class="btn btn-primary" @onclick="()=>DownloadPdf(item)"><i class="fa-solid fa-file-pdf"></i></button></td>
@@ -79,6 +87,10 @@ else
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">Номер головної накладної на поставку: @currentInvoice.ShipmentInvoice.ShipmentInvoiceNumber</li>
+                    @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                    {
+                        <li class="list-group-item">Ім'я автора: @(currentInvoice.Author?.EmployeeName ?? "")</li>
+                    }
                     <li class="list-group-item">Адреса відділення: @currentEmployee.Shop.StreetAddress</li>
                     <li class="list-group-item">Сума поставки: @currentInvoice.StationerySupplies.Sum(e=>e.Quantity*e.ShipmentSupply.Cost)</li>
                     <li class="list-group-item">Час створення накладної: @currentInvoice.CreationDate</li>
@@ -269,7 +281,7 @@ else
         try
         {
             allInvoices = await Http.GetFromJsonAsync<DeliveryInvoice[]>("api/deliveryinvoices");
-            invoices = allInvoices.Where(i => i.AuthorId == currentEmployee.EmployeeId).ToArray();
+            invoices = allInvoices.Where(i => i.AuthorId == currentEmployee.EmployeeId || currentEmployee.Job.JobName.ToLower().Contains("admin")).ToArray();
             mainInvoices = await Http.GetFromJsonAsync<ShipmentInvoice[]>("api/shipmentinvoices");
             stock = await Http.GetFromJsonAsync<StockProduct[]>("api/stockproducts?shopId=" + currentEmployee.ShopId);
             products = await Http.GetFromJsonAsync<StationeryProduct[]>("api/stationeryproducts");

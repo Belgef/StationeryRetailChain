@@ -1,0 +1,148 @@
+﻿@switch (action)
+{
+    case Action.All:
+        <p class="h4 m-4">Список міст</p>
+        @if (items != null)
+        {
+            <button class="btn btn-primary" @onclick="()=>{ClearForm();newItem=null;action=Action.Add;}">Додати місто</button>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Назва</th>
+                        <th scope="col">Область</th>
+                        <th scope="col">Країна</th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items.OrderBy(c => c.CityName))
+                    {
+                        <tr>
+                            <td>@item.CityName</td>
+                            <td>@item.State?.StateName</td>
+                            <td>@item.State?.Country?.CountryName</td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Edit(item)"><i class="fa-solid fa-pen-to-square" /></button></td>
+                            <td><button type="button" class="btn btn-primary" @onclick="()=>Delete(item)"><i class="fa-solid fa-eraser"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        break;
+    case Action.Add:
+    case Action.Edit:
+        <p class="h4 m-4">@((action==Action.Add)?"Додати місто":"Редагувати місто")</p>
+        <EditForm EditContext="editContext" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <FInputString Name="Назва" @bind-Value="newData.Name" />
+            <FInputFK Name="Область" @bind-Value="newData.StateId" Options=@(states.ToDictionary(e=>e.StateId??-1,e=>e.StateName)) />
+            <button type="submit" class="btn btn-primary">@((action==Action.Add)?"Додати":"Редагувати")</button>
+        </EditForm>
+        <button class="btn btn-primary" @onclick="()=>action=Action.All">Список міст</button>
+        break;
+}
+
+@code {
+
+    private enum Action { All, Add, Edit }
+    private Action action = Action.All;
+
+    private const string Path = "api/cities";
+
+    private City[]? items;
+    private State[]? states;
+
+    //Create
+    private EditContext? editContext;
+    private class InputData
+    {
+        public int Id { get; set; } = 0;
+        [Required]
+        [StringLength(20, MinimumLength = 2, ErrorMessage = "Назва має мати розмір від {2} до {1} символів.")]
+        public string Name { get; set; } = "";
+        [Required]
+        public int StateId { get; set; }
+    }
+    private InputData newData = new();
+    private City? newItem;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+    public async Task LoadDataAsync()
+    {
+        try
+        {
+            items = await Http.GetFromJsonAsync<City[]>(Path);
+            states = await Http.GetFromJsonAsync<State[]>("api/states");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(newData);
+        messageStore = new(editContext);
+    }
+    private async void HandleValidSubmit()
+    {
+        newItem = new City()
+            {
+                StateId = newData.StateId,
+                CityName = newData.Name
+            };
+        messageStore?.Clear();
+
+        HttpResponseMessage result;
+        if (action == Action.Add)
+            result = await Http.PostAsJsonAsync(Path, newItem);
+        else
+        {
+            newItem.CityId = newData.Id;
+            result = await Http.PutAsJsonAsync(Path+"/" + newData.Id, newItem);
+        }
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { (action == Action.Add) ? "Місто додано" : "Місто редаговано" });
+            ClearForm();
+            newItem = null;
+            action = Action.All;
+            await LoadDataAsync();
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { result.ReasonPhrase });
+    }
+    private void ClearForm()
+    {
+        newData.StateId = 0;
+        newData.Id = -1;
+        newData.Name = "";
+    }
+    private void Edit(City item)
+    {
+        newData.StateId = item.StateId;
+        newData.Id = item.CityId ?? 0;
+        newData.Name = item.CityName ?? "";
+        action = Action.Edit;
+    }
+    private async void Delete(City item)
+    {
+        var result = await Http.DeleteAsync(Path+"/" + item.CityId);
+        if (result.IsSuccessStatusCode)
+        {
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Місто видалено" });
+            await LoadDataAsync();
+            action = Action.All;
+            this.StateHasChanged();
+        }
+        else
+            await JSRuntime.InvokeAsync<object>("Alert", new object[] { "Ви не можете видалити це місто" });
+    }
+}

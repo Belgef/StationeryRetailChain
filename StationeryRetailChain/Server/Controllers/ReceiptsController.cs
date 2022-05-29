@@ -35,9 +35,8 @@ namespace StationeryRetailChain.Server.Controllers
                     return NotFound();
                 if (!(emp.Job.JobName.ToLower().Contains("seller") || emp.Job.JobName.ToLower().Contains("admin")))
                     return Forbid();
-                return await _context.Receipts.Where(e => e.SellerId == employeeId)
-                .Include(e => e.Customer).Include(e => e.Items).ThenInclude(e => e.StockProduct)
-                .ThenInclude(e => e.StationeryProduct).Include(e=>e.Seller).ThenInclude(e=>e.Shop)
+                return await _context.Receipts.Where(e => e.SellerId == employeeId || emp.Job.JobName.ToLower().Contains("admin"))
+                .Include(e => e.Customer).Include(e=>e.Seller).ThenInclude(e=>e.Shop)
                 .ThenInclude(e=>e.City).ThenInclude(e=>e.State).ThenInclude(e=>e.Country).ToListAsync();
             }
             else
@@ -53,7 +52,11 @@ namespace StationeryRetailChain.Server.Controllers
           {
               return NotFound();
           }
-            var receipt = await _context.Receipts.FirstOrDefaultAsync(e => e.ReceiptId == id);
+            var receipt = await _context.Receipts
+                .Include(e => e.Customer).Include(e => e.Items).ThenInclude(e => e.StockProduct)
+                .ThenInclude(e => e.StationeryProduct).Include(e => e.Seller).ThenInclude(e => e.Shop)
+                .ThenInclude(e => e.City).ThenInclude(e => e.State).ThenInclude(e => e.Country)
+                .FirstOrDefaultAsync(e => e.ReceiptId == id);
 
             if (receipt == null)
             {

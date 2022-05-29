@@ -56,6 +56,10 @@ else
                         <tr>
                             <th scope="col">Номер накладної</th>
                             <th scope="col">Постачальник</th>
+                            @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                            {
+                                <th scope="col">Автор</th>
+                            }
                             <th scope="col">Сума поставки</th>
                             <th scope="col">Час створення</th>
                             <th scope="col"></th>
@@ -67,6 +71,10 @@ else
                             <tr style="cursor:pointer;">
                                 <td @onclick="()=>GetInvoice(item)">@item.ShipmentInvoiceNumber</td>
                                 <td @onclick="()=>GetInvoice(item)">@item.Supplier.SupplierName</td>
+                                @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                                {
+                                    <td @onclick="()=>GetInvoice(item)">@(item.Author?.EmployeeName ?? "")</td>
+                                }
                                 <td @onclick="()=>GetInvoice(item)">@item.TotalSum</td>
                                 <td @onclick="()=>GetInvoice(item)">@item.CreationDate</td>
                                 <td><button type="button" class="btn btn-primary" @onclick="()=>DownloadPdf(item)"><i class="fa-solid fa-file-pdf"></i></button></td>
@@ -82,7 +90,11 @@ else
                     Накладна №@currentInvoice.ShipmentInvoiceNumber
                 </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item">Ім'я постачальника: @(currentInvoice.Supplier?.SupplierName ?? "")</li>
+                    <li class="list-group-item">Назва постачальника: @(currentInvoice.Supplier?.SupplierName ?? "")</li>
+                    @if(currentEmployee.Job.JobName.ToLower().Contains("admin"))
+                    {
+                        <li class="list-group-item">Ім'я автора: @(currentInvoice.Author?.EmployeeName ?? "")</li>
+                    }
                     <li class="list-group-item">Сума поставки: @currentInvoice.TotalSum</li>
                     <li class="list-group-item">Час створення накладної: @currentInvoice.CreationDate</li>
                 </ul>

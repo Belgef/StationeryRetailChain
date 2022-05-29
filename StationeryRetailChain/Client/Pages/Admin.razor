@@ -20,11 +20,14 @@ else if (!(currentEmployee.Job.JobName.ToLower().Contains("admin")))
 }
 else
 {
-    <h1 class="display-6 text-center">Термінал менеджера з продажу</h1>
+    <h1 class="display-6 text-center">Термінал адміністратора</h1>
     <div class="card">
         <div class="card-body">
             <button class="btn btn-primary" @onclick="()=>action=Action.Employees">Працівники</button>
             <button class="btn btn-primary" @onclick="()=>action=Action.Shops">Відділення</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Countries">Країни</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.States">Області</button>
+            <button class="btn btn-primary" @onclick="()=>action=Action.Cities">Міста</button>
         </div>
     </div>
     @switch (action)
@@ -35,11 +38,20 @@ else
         case Action.Shops:
             <ShopManager />
             break;
+        case Action.Countries:
+            <CountryManager />
+            break;
+        case Action.States:
+            <StateManager />
+            break;
+        case Action.Cities:
+            <CityManager />
+            break;
     }
 }
 
 @code {
-    private enum Action { Employees, Shops }
+    private enum Action { Employees, Shops, Countries, States, Cities }
     private Action action = Action.Employees;
 
     private Employee? currentEmployee;
